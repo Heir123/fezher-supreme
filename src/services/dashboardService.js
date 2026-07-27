@@ -1,33 +1,34 @@
 import { supabase } from "./supabase";
 
 export async function getDashboardStats() {
-  const [
-    { count: products },
-    { count: customers },
-    { count: suppliers },
-    { count: sales },
-  ] = await Promise.all([
-    supabase
-      .from("products")
-      .select("*", { count: "exact", head: true }),
+  const { data: sales = [] } = await supabase
+    .from("sales")
+    .select("*");
 
-    supabase
-      .from("customers")
-      .select("*", { count: "exact", head: true }),
+  const { data: products = [] } = await supabase
+    .from("products")
+    .select("*");
 
-    supabase
-      .from("suppliers")
-      .select("*", { count: "exact", head: true }),
+  const { data: customers = [] } = await supabase
+    .from("customers")
+    .select("*");
 
-    supabase
-      .from("sales")
-      .select("*", { count: "exact", head: true }),
-  ]);
+  const totalRevenue = sales.reduce(
+    (sum, sale) => sum + Number(sale.total_amount || 0),
+    0
+  );
+
+  const lowStockProducts = products.filter(
+    (product) =>
+      Number(product.stock_quantity || 0) <=
+      Number(product.minimum_stock || 5)
+  ).length;
 
   return {
-    products: products ?? 0,
-    customers: customers ?? 0,
-    suppliers: suppliers ?? 0,
-    sales: sales ?? 0,
+    totalRevenue,
+    totalSales: sales.length,
+    totalProducts: products.length,
+    totalCustomers: customers.length,
+    lowStockProducts,
   };
 }

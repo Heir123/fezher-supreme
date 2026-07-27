@@ -1,16 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
+import DashboardLayout from "@/layouts/DashboardLayout";
 
-import CompanyDialog from "./CompanyDialog";
-import CompanyTable from "./CompanyTable";
+import ProductTable from "./ProductTable";
+import ProductDialog from "./ProductDialog";
+import ProductStats from "./ProductStats";
 
-import PageHeader from "@/components/common/PageHeader";
-import StatsCard from "@/components/common/StatsCard";
-import SearchBar from "@/components/common/SearchBar";
-import Toolbar from "@/components/common/Toolbar";
-import LoadingSpinner from "@/components/common/LoadingSpinner";
-import EmptyState from "@/components/common/EmptyState";
-import ConfirmDialog from "@/components/common/ConfirmDialog";
-import { toast } from "sonner";
+import { getProducts } from "@/services/productService";;
 
 import {
   getCompanies,

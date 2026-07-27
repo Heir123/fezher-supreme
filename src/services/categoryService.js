@@ -34,7 +34,11 @@ export async function addCategory(category) {
     .single();
 
   if (error) {
-    console.error("addCategory:", error);
+    console.error("Category Error:", error);
+console.log(error.message);
+console.log(error.details);
+console.log(error.hint);
+console.log(error.code);
     throw error;
   }
 

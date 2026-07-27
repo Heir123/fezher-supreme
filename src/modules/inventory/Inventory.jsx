@@ -1,10 +1,5 @@
-import DashboardLayout from "@/layouts/DashboardLayout";
-import CompanyManagement from "./CompanyManagement";
+import ProductManagement from "@/modules/products/ProductManagement";
 
 export default function Inventory() {
-  return (
-    <DashboardLayout>
-      <CompanyManagement />
-    </DashboardLayout>
-  );
+  return <ProductManagement />;
 }
