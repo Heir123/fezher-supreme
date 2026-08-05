@@ -35,10 +35,18 @@ export async function updateCompany(id, company) {
 }
 
 export async function deleteCompany(id) {
-  const { error } = await supabase
+  console.log("Deleting company:", id);
+
+  const { data, error } = await supabase
     .from("companies")
     .delete()
-    .eq("id", id);
+    .eq("id", id)
+    .select();
+
+  console.log("Deleted data:", data);
+  console.log("Delete error:", error);
 
   if (error) throw error;
+
+  return data;
 }

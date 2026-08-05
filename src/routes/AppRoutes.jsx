@@ -6,7 +6,7 @@ import NotFound from "../Pages/NotFound";
 
 import ProtectedRoute from "@/components/ProtectedRoute";
 
-import Dashboard from "@/modules/dashboard/Dashboard";
+import Dashboard2 from "@/modules/dashboard/Dashboard2";
 import CompanyManagement from "@/modules/companies/CompanyManagement";
 import Inventory from "@/modules/inventory/Inventory";
 import InventoryMovements from "@/modules/inventory/InventoryMovements";
@@ -28,7 +28,15 @@ import Departments from "@/modules/hr/Departments";
 import Positions from "@/modules/hr/Positions";
 import Attendance from "@/modules/hr/Attendance";
 import Payroll from "@/modules/hr/Payroll";
-
+import SalesAnalytics from "@/modules/analytics/sales/SalesAnalytics";
+import PurchaseAnalytics from "@/modules/analytics/purchases/PurchaseAnalytics";
+import InventoryAnalytics from "@/modules/analytics/inventory/InventoryAnalytics";
+import FinanceAnalytics from "@/modules/analytics/finance/FinanceAnalytics";
+import CRMAnalytics from "@/modules/analytics/crm/CRMAnalytics";
+import HRAnalytics from "@/modules/analytics/hr/HRAnalytics";
+import ReportsCenter from "@/modules/reports/ReportsCenter";
+import ExecutiveDashboard from "@/modules/executive/ExecutiveDashboard";
+import InventoryDashboard from "@/modules/inventory/InventoryDashboard";
 function AppRoutes() {
   return (
     <BrowserRouter>
@@ -43,13 +51,13 @@ function AppRoutes() {
         {/* Protected Routes */}
 
         <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
+  path="/dashboard"
+  element={
+    <ProtectedRoute>
+      <Dashboard2 />
+    </ProtectedRoute>
+  }
+/>
 
         <Route
           path="/companies"
@@ -178,6 +186,11 @@ function AppRoutes() {
         />
 
         <Route
+  path="/hr"
+  element={<Navigate to="/hr/employees" replace />}
+/>
+
+        <Route
           path="/hr/employees"
           element={
             <ProtectedRoute>
@@ -222,6 +235,78 @@ function AppRoutes() {
           }
         />
 
+       <Route
+  path="/analytics/sales"
+  element={<SalesAnalytics />}
+/>
+
+<Route
+  path="/analytics/purchases"
+  element={
+    <ProtectedRoute>
+      <PurchaseAnalytics />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/analytics/inventory"
+  element={
+    <ProtectedRoute>
+      <InventoryAnalytics />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/analytics/finance"
+  element={
+    <ProtectedRoute>
+      <FinanceAnalytics />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/analytics/crm"
+  element={
+    <ProtectedRoute>
+      <CRMAnalytics />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/analytics/hr"
+  element={
+    <ProtectedRoute>
+      <HRAnalytics />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+    path="/reports"
+    element={<ReportsCenter />}
+/>
+
+<Route
+  path="/executive"
+  element={
+    <ProtectedRoute>
+      <ExecutiveDashboard />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/inventory-dashboard"
+  element={
+    <ProtectedRoute>
+      <InventoryDashboard />
+    </ProtectedRoute>
+  }
+/>
         <Route path="*" element={<NotFound />} />
 
       </Routes>

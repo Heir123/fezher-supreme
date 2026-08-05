@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import DashboardLayout from "@/layouts/DashboardLayout";
+import FinanceCards from "./FinanceCards";
 import { getFinanceSummary } from "@/services/financeService";
 
 export default function FinanceDashboard() {
@@ -7,6 +8,7 @@ export default function FinanceDashboard() {
     revenue: 0,
     expenses: 0,
     profit: 0,
+    outstandingInvoices: 0,
   });
 
   useEffect(() => {
@@ -38,30 +40,12 @@ export default function FinanceDashboard() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-
-          <div className="bg-white rounded-xl shadow p-6">
-            <h3 className="text-gray-500">Revenue</h3>
-            <p className="text-3xl font-bold text-green-600">
-              R {summary.revenue.toFixed(2)}
-            </p>
-          </div>
-
-          <div className="bg-white rounded-xl shadow p-6">
-            <h3 className="text-gray-500">Purchases</h3>
-            <p className="text-3xl font-bold text-red-600">
-              R {summary.expenses.toFixed(2)}
-            </p>
-          </div>
-
-          <div className="bg-white rounded-xl shadow p-6">
-            <h3 className="text-gray-500">Profit</h3>
-            <p className="text-3xl font-bold text-blue-600">
-              R {summary.profit.toFixed(2)}
-            </p>
-          </div>
-
-        </div>
+        <FinanceCards
+          totalIncome={summary.revenue}
+          totalExpenses={summary.expenses}
+          profit={summary.profit}
+          outstandingInvoices={summary.outstandingInvoices}
+        />
       </div>
     </DashboardLayout>
   );

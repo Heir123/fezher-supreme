@@ -46,6 +46,13 @@ export default function Sidebar() {
           Products
         </Link>
 
+<Link
+  to="/inventory-dashboard"
+  className="flex items-center gap-3 p-3 rounded hover:bg-slate-700"
+>
+  <Package size={20} />
+  Inventory Dashboard
+</Link>
         <Link
           to="/categories"
           className="flex items-center gap-3 p-3 rounded hover:bg-slate-700"

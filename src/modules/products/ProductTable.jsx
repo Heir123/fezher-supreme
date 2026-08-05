@@ -1,96 +1,158 @@
+import {
+  Pencil,
+  Trash2,
+  Package,
+} from "lucide-react";
+
 export default function ProductTable({
   products,
   onEdit,
   onDelete,
 }) {
+
   return (
-    <div className="bg-white rounded-xl shadow overflow-x-auto">
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
 
-      <table className="w-full text-sm whitespace-nowrap">
+      <div className="overflow-x-auto">
 
-        <thead className="bg-slate-100">
-          <tr>
-            <th className="px-3 py-3 text-left">Product</th>
-            <th className="px-3 py-3 text-left">SKU</th>
-            <th className="px-3 py-3 text-left">Company</th>
-            <th className="px-3 py-3 text-left">Category</th>
-            <th className="px-3 py-3 text-left">Supplier</th>
-            <th className="px-3 py-3 text-right">Selling Price</th>
-            <th className="px-3 py-3 text-center">Stock</th>
-            <th className="px-3 py-3 text-center w-40">Actions</th>
-          </tr>
-        </thead>
+        <table className="min-w-full">
 
-        <tbody>
-          {products.length === 0 ? (
-            <tr>
-              <td
-                colSpan="8"
-                className="py-8 text-center text-gray-500"
-              >
-                No products found.
-              </td>
+          <thead className="bg-gray-50 border-b">
+
+            <tr className="text-left text-sm text-gray-600">
+
+              <th className="px-6 py-4">Product</th>
+
+              <th className="px-6 py-4">Category</th>
+
+              <th className="px-6 py-4">Company</th>
+
+              <th className="px-6 py-4">Price</th>
+
+              <th className="px-6 py-4">Stock</th>
+
+              <th className="px-6 py-4 text-center">
+                Actions
+              </th>
+
             </tr>
-          ) : (
-            products.map((product) => (
-              <tr
-                key={product.id}
-                className="border-t hover:bg-gray-50"
-              >
-                <td className="px-3 py-3 font-medium">
-                  {product.name}
-                </td>
 
-                <td className="px-3 py-3">
-                  {product.sku || "-"}
-                </td>
+          </thead>
 
-                <td className="px-3 py-3">
-                  {product.companies?.name || "-"}
-                </td>
+          <tbody>
 
-                <td className="px-3 py-3">
-                  {product.categories?.name || "-"}
-                </td>
+            {products.length === 0 ? (
 
-                <td className="px-3 py-3">
-                  {product.suppliers?.name || "-"}
-                </td>
+              <tr>
 
-                <td className="px-3 py-3 text-right">
-                  R {Number(product.selling_price ?? 0).toFixed(2)}
-                </td>
+                <td
+                  colSpan={6}
+                  className="text-center py-16 text-gray-400"
+                >
 
-                <td className="px-3 py-3 text-center">
-                  {product.stock_quantity}
-                </td>
+                  <Package
+                    className="mx-auto mb-4"
+                    size={40}
+                  />
 
-                <td className="px-3 py-3">
-                  <div className="flex justify-center gap-2">
+                  No products found.
 
-                    <button
-                      onClick={() => onEdit(product)}
-                      className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-                    >
-                      Edit
-                    </button>
-
-                    <button
-                      onClick={() => onDelete(product.id)}
-                      className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
-                    >
-                      Delete
-                    </button>
-
-                  </div>
                 </td>
 
               </tr>
-            ))
-          )}
-        </tbody>
 
-      </table>
+            ) : (
+
+              products.map((product) => (
+
+                <tr
+                  key={product.id}
+                  className="border-b hover:bg-gray-50 transition"
+                >
+
+                  <td className="px-6 py-4 font-medium">
+                    {product.name}
+                  </td>
+
+                  <td className="px-6 py-4">
+                    {product.categories?.name ||
+                      product.category ||
+                      "-"}
+                  </td>
+
+                  <td className="px-6 py-4">
+                    {product.companies?.name ||
+                      product.company ||
+                      "-"}
+                  </td>
+
+                  <td className="px-6 py-4 font-semibold">
+                    R{" "}
+                    {Number(
+                      product.selling_price ??
+                        product.price ??
+                        0
+                    ).toFixed(2)}
+                  </td>
+
+                  <td className="px-6 py-4">
+
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm font-medium ${
+                        Number(
+                          product.stock_quantity ??
+                            product.stock ??
+                            0
+                        ) <=
+                        Number(
+                          product.minimum_stock ?? 5
+                        )
+                          ? "bg-red-100 text-red-700"
+                          : "bg-green-100 text-green-700"
+                      }`}
+                    >
+                      {product.stock_quantity ??
+                        product.stock ??
+                        0}
+                    </span>
+
+                  </td>
+
+                  <td className="px-6 py-4">
+
+                    <div className="flex justify-center gap-3">
+
+                      <button
+                        onClick={() =>
+                          onEdit(product)
+                        }
+                        className="text-blue-600 hover:text-blue-800"
+                      >
+                        <Pencil size={18} />
+                      </button>
+
+                      <button
+  onClick={() => onDelete(product)}
+  className="text-red-600 hover:text-red-800"
+>
+  <Trash2 size={18} />
+</button>
+
+                    </div>
+
+                  </td>
+
+                </tr>
+
+              ))
+
+            )}
+
+          </tbody>
+
+        </table>
+
+      </div>
 
     </div>
   );
