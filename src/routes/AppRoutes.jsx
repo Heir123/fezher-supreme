@@ -37,6 +37,10 @@ import HRAnalytics from "@/modules/analytics/hr/HRAnalytics";
 import ReportsCenter from "@/modules/reports/ReportsCenter";
 import ExecutiveDashboard from "@/modules/executive/ExecutiveDashboard";
 import InventoryDashboard from "@/modules/inventory/InventoryDashboard";
+import PurchaseView from "@/modules/purchases/PurchaseView";
+import CustomerProfile from "@/modules/customers/CustomerProfile";
+import Transactions from "@/modules/finance/Transactions";
+import LeaveManagement from "@/modules/hr/LeaveManagement";
 function AppRoutes() {
   return (
     <BrowserRouter>
@@ -306,6 +310,26 @@ function AppRoutes() {
       <InventoryDashboard />
     </ProtectedRoute>
   }
+/>
+
+<Route
+  path="/purchases/:id"
+  element={<PurchaseView />}
+/>
+
+<Route
+  path="/customers/:id"
+  element={<CustomerProfile />}
+/>
+
+<Route
+  path="/finance/transactions"
+  element={<Transactions />}
+/>
+
+<Route
+  path="/hr/leave"
+  element={<LeaveManagement />}
 />
         <Route path="*" element={<NotFound />} />
 

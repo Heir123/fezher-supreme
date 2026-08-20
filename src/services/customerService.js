@@ -2,6 +2,14 @@ import { supabase } from "./supabase";
 
 /*
 |--------------------------------------------------------------------------
+| Company ID
+|--------------------------------------------------------------------------
+*/
+
+const COMPANY_ID = "196a067f-9cc4-4d99-88cd-f905b5a1ad3f";
+
+/*
+|--------------------------------------------------------------------------
 | Get All Customers
 |--------------------------------------------------------------------------
 */
@@ -12,10 +20,7 @@ export async function getCustomers() {
     .select("*")
     .order("name", { ascending: true });
 
-  if (error) {
-    console.error("getCustomers:", error);
-    throw error;
-  }
+  if (error) throw error;
 
   return data;
 }
@@ -27,14 +32,21 @@ export async function getCustomers() {
 */
 
 export async function addCustomer(customer) {
+  const payload = {
+    company_id: COMPANY_ID,
+    ...customer,
+  };
+
+  console.log("Saving Customer:", payload);
+
   const { data, error } = await supabase
     .from("customers")
-    .insert([customer])
+    .insert([payload])
     .select()
     .single();
 
   if (error) {
-    console.error("addCustomer:", error);
+    console.error(error);
     throw error;
   }
 
@@ -48,17 +60,19 @@ export async function addCustomer(customer) {
 */
 
 export async function updateCustomer(id, customer) {
+  const payload = {
+    company_id: COMPANY_ID,
+    ...customer,
+  };
+
   const { data, error } = await supabase
     .from("customers")
-    .update(customer)
+    .update(payload)
     .eq("id", id)
     .select()
     .single();
 
-  if (error) {
-    console.error("updateCustomer:", error);
-    throw error;
-  }
+  if (error) throw error;
 
   return data;
 }
@@ -75,10 +89,7 @@ export async function deleteCustomer(id) {
     .delete()
     .eq("id", id);
 
-  if (error) {
-    console.error("deleteCustomer:", error);
-    throw error;
-  }
+  if (error) throw error;
 
   return true;
 }

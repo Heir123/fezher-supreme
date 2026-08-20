@@ -10,10 +10,8 @@ export async function getSuppliers() {
   const { data, error } = await supabase
     .from("suppliers")
     .select("*")
+    .eq("status", "Active")
     .order("name", { ascending: true });
-
-  console.log("Suppliers data:", data);
-  console.log("Suppliers error:", error);
 
   if (error) throw error;
 
@@ -27,14 +25,23 @@ export async function getSuppliers() {
 */
 
 export async function addSupplier(supplier) {
+  // Automatically attach company_id
+  const supplierData = {
+    ...supplier,
+    company_id: "196a067f-9cc4-4d99-88cd-f905b5a1ad3f",
+  };
+
+  console.log("Sending supplier:");
+  console.table(supplierData);
+
   const { data, error } = await supabase
     .from("suppliers")
-    .insert([supplier])
+    .insert([supplierData])
     .select()
     .single();
 
   if (error) {
-    console.error("addSupplier:", error);
+    console.error("Supabase Error:", error);
     throw error;
   }
 
@@ -76,7 +83,25 @@ export async function deleteSupplier(id) {
     .eq("id", id);
 
   if (error) {
-    console.error("deleteSupplier:", error);
+    console.error("DELETE ERROR:", error);
+    console.log("Message:", error.message);
+    console.log("Details:", error.details);
+    console.log("Hint:", error.hint);
+    console.log("Code:", error.code);
+
+    alert(`
+Message: ${error.message}
+
+Details:
+${error.details}
+
+Hint:
+${error.hint}
+
+Code:
+${error.code}
+    `);
+
     throw error;
   }
 

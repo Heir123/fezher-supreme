@@ -1,116 +1,133 @@
 import React from "react";
 
-export default function ReportsTable({ dashboard }) {
+function formatCurrency(value) {
+  return `R ${Number(value || 0).toLocaleString(
+    "en-ZA",
+    {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }
+  )}`;
+}
 
-    const rows = [
+export default function ReportsTable({
+  dashboard,
+}) {
+  const rows = [
+    {
+      module: "Sales",
+      value:
+        dashboard?.sales?.total_sales ?? 0,
+      description: "Total Sales",
+    },
 
-        {
-            module: "Sales",
-            value: dashboard?.sales?.total_sales ?? 0,
-            description: "Total Sales"
-        },
+    {
+      module: "Revenue",
+      value: formatCurrency(
+        dashboard?.finance?.revenue
+      ),
+      description: "Revenue",
+    },
 
-        {
-            module: "Revenue",
-            value: `R ${dashboard?.finance?.revenue ?? 0}`,
-            description: "Revenue"
-        },
+    {
+      module: "Expenses",
+      value: formatCurrency(
+        dashboard?.finance?.expenses
+      ),
+      description: "Expenses",
+    },
 
-        {
-            module: "Expenses",
-            value: `R ${dashboard?.finance?.expenses ?? 0}`,
-            description: "Expenses"
-        },
+    {
+      module: "Profit",
+      value: formatCurrency(
+        dashboard?.finance?.profit
+      ),
+      description: "Net Profit",
+    },
 
-        {
-            module: "Profit",
-            value: `R ${dashboard?.finance?.profit ?? 0}`,
-            description: "Net Profit"
-        },
+    {
+      module: "Products",
+      value:
+        dashboard?.inventory
+          ?.total_products ?? 0,
+      description: "Inventory Products",
+    },
 
-        {
-            module: "Products",
-            value: dashboard?.inventory?.total_products ?? 0,
-            description: "Inventory Products"
-        },
+    {
+      module: "Customers",
+      value:
+        dashboard?.customers
+          ?.total_customers ?? 0,
+      description: "Registered Customers",
+    },
 
-        {
-            module: "Customers",
-            value: dashboard?.customers?.total_customers ?? 0,
-            description: "Registered Customers"
-        },
+    {
+      module: "Employees",
+      value:
+        dashboard?.employees
+          ?.total_employees ?? 0,
+      description: "Employees",
+    },
+  ];
 
-        {
-            module: "Employees",
-            value: dashboard?.employees?.total_employees ?? 0,
-            description: "Employees"
-        }
+  return (
+    <div className="bg-white rounded-xl shadow p-6">
 
-    ];
+      <h2 className="text-xl font-semibold mb-5">
+        Business Report Summary
+      </h2>
 
-    return (
+      <div className="overflow-x-auto">
 
-        <div className="bg-white rounded-xl shadow p-6">
+        <table className="w-full border-collapse">
 
-            <h2 className="text-xl font-semibold mb-5">
+          <thead>
+            <tr className="border-b">
 
-                Business Report Summary
+              <th className="text-left py-3">
+                Module
+              </th>
 
-            </h2>
+              <th className="text-left py-3">
+                Value
+              </th>
 
-            <table className="w-full border-collapse">
+              <th className="text-left py-3">
+                Description
+              </th>
 
-                <thead>
+            </tr>
+          </thead>
 
-                    <tr className="border-b">
+          <tbody>
 
-                        <th className="text-left py-3">Module</th>
+            {rows.map((row) => (
+              <tr
+                key={row.module}
+                className="border-b hover:bg-gray-50"
+              >
 
-                        <th className="text-left py-3">Value</th>
+                <td className="py-3">
+                  {row.module}
+                </td>
 
-                        <th className="text-left py-3">Description</th>
+                <td className="py-3 font-semibold">
+                  {row.value}
+                </td>
 
-                    </tr>
+                <td className="py-3 text-gray-500">
+                  {row.description}
+                </td>
 
-                </thead>
+              </tr>
+            ))}
 
-                <tbody>
+          </tbody>
 
-                    {rows.map((row, index) => (
+        </table>
 
-                        <tr
-                            key={index}
-                            className="border-b hover:bg-gray-50"
-                        >
+      </div>
 
-                            <td className="py-3">
-
-                                {row.module}
-
-                            </td>
-
-                            <td className="py-3 font-semibold">
-
-                                {row.value}
-
-                            </td>
-
-                            <td className="py-3 text-gray-500">
-
-                                {row.description}
-
-                            </td>
-
-                        </tr>
-
-                    ))}
-
-                </tbody>
-
-            </table>
-
-        </div>
-
-    );
-
+    </div>
+  );
 }

@@ -15,17 +15,57 @@ import { getTopSellingProducts } from "@/services/topProductsService";
 import { getLowStockProducts } from "@/services/lowStockService";
 import { getRecentActivities } from "@/services/recentActivityService";
 
+// Helper function to get date range based on period
+function getDateRange(period) {
+  const now = new Date();
+  const endDate = new Date(now);
+  let startDate = new Date(now);
+
+  switch (period) {
+    case "today":
+      startDate.setHours(0, 0, 0, 0);
+      endDate.setHours(23, 59, 59, 999);
+      break;
+    case "week":
+      startDate.setDate(now.getDate() - 7);
+      startDate.setHours(0, 0, 0, 0);
+      endDate.setHours(23, 59, 59, 999);
+      break;
+    case "month":
+      startDate.setMonth(now.getMonth() - 1);
+      startDate.setHours(0, 0, 0, 0);
+      endDate.setHours(23, 59, 59, 999);
+      break;
+    case "quarter":
+      startDate.setMonth(now.getMonth() - 3);
+      startDate.setHours(0, 0, 0, 0);
+      endDate.setHours(23, 59, 59, 999);
+      break;
+    case "year":
+      startDate.setFullYear(now.getFullYear() - 1);
+      startDate.setHours(0, 0, 0, 0);
+      endDate.setHours(23, 59, 59, 999);
+      break;
+    case "all":
+    default:
+      startDate = new Date(2020, 0, 1); // Start from 2020
+      startDate.setHours(0, 0, 0, 0);
+      endDate.setHours(23, 59, 59, 999);
+      break;
+  }
+
+  return {
+    startDate,
+    endDate
+  };
+}
+
 export default function Dashboard2() {
   const [period, setPeriod] = useState("all");
-
   const [loading, setLoading] = useState(true);
-
   const [stats, setStats] = useState(null);
-
   const [topProducts, setTopProducts] = useState([]);
-
   const [lowStock, setLowStock] = useState([]);
-
   const [activities, setActivities] = useState([]);
 
   useEffect(() => {
@@ -36,16 +76,16 @@ export default function Dashboard2() {
     try {
       setLoading(true);
 
-      const [
-        executive,
-        products,
-        stock,
-        recent,
-      ] = await Promise.all([
-        getExecutiveDashboard(period),
-        getTopSellingProducts(period),
+      const { startDate, endDate } = getDateRange(period);
+      
+      // Log to debug
+      console.log("Date range:", { period, startDate: startDate.toISOString(), endDate: endDate.toISOString() });
+
+      const [executive, products, stock, recent] = await Promise.all([
+        getExecutiveDashboard({ period, startDate, endDate }),
+        getTopSellingProducts({ startDate, endDate }),
         getLowStockProducts(),
-        getRecentActivities(period),
+        getRecentActivities({ startDate, endDate }),
       ]);
 
       setStats(executive);
@@ -62,8 +102,11 @@ export default function Dashboard2() {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="flex justify-center items-center min-h-screen">
-          Loading Dashboard...
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading Dashboard...</p>
+          </div>
         </div>
       </DashboardLayout>
     );
@@ -71,19 +114,13 @@ export default function Dashboard2() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-8">
+      <div className="space-y-6 p-6">
+        <DashboardHeader2 period={period} onPeriodChange={setPeriod} />
 
-        <DashboardHeader2
-          period={period}
-          onPeriodChange={setPeriod}
-        />
-
-        <DashboardCards2
-          summary={stats || {}}
-        />
+        <DashboardCards2 summary={stats || {}} />
 
         <DashboardCharts2
-          salesData={stats?.monthlySales || []}
+          salesData={stats?.revenueTrend || []}
           financeData={[
             {
               name: "Revenue",
@@ -96,20 +133,19 @@ export default function Dashboard2() {
           ]}
         />
 
-        <DashboardTopProducts2
-          products={topProducts}
-        />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <DashboardTopProducts2 products={topProducts} />
+          <DashboardLowStock2 products={lowStock} />
+        </div>
 
-        <DashboardLowStock2
-          products={lowStock}
-        />
-
-        <DashboardQuickActions2 />
-
-        <DashboardActivity2
-          activities={activities}
-        />
-
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <DashboardQuickActions2 />
+          </div>
+          <div className="lg:col-span-1">
+            <DashboardActivity2 activities={activities} />
+          </div>
+        </div>
       </div>
     </DashboardLayout>
   );

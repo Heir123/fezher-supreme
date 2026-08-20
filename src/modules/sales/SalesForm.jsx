@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/services/supabase";
+import { createTransaction } from "@/services/transactionService";
 import { getCustomers } from "@/services/customerService";
 import { getProducts } from "@/services/productService";
 
-export default function SaleForm() {
+export default function SalesForm({ onSuccess }) {
   const [customers, setCustomers] = useState([]);
   const [products, setProducts] = useState([]);
 
@@ -67,8 +68,7 @@ export default function SaleForm() {
           .from("sales")
           .insert([
             {
-              company_id:
-                "196a067f-9cc4-4d99-88cd-f905b5a1ad3f",
+              company_id: product.company_id,
               customer_id: form.customer_id,
               invoice_number: invoiceNumber,
               total_amount: totalAmount,
@@ -88,7 +88,7 @@ export default function SaleForm() {
             {
               sale_id: sale.id,
               product_id: form.product_id,
-              quantity: quantity,
+              quantity,
               unit_price: product.selling_price,
               total_price: totalAmount,
             },
@@ -96,46 +96,49 @@ export default function SaleForm() {
 
       if (itemError) throw itemError;
 
-      // Deduct Stock
+      // Update Stock
+      const newStock =
+        Number(product.stock_quantity) - quantity;
 
-const previousStock =
-  Number(product.stock_quantity);
+      const { error: stockError } =
+        await supabase
+          .from("products")
+          .update({
+            stock_quantity: newStock,
+          })
+          .eq("id", form.product_id);
 
-const newStock =
-  previousStock - quantity;
+      if (stockError) throw stockError;
 
-const { error: stockError } =
-  await supabase
-    .from("products")
-    .update({
-      stock_quantity: newStock,
-    })
-    .eq("id", form.product_id);
+      // Stock Movement
+      const { error: movementError } =
+        await supabase
+          .from("stock_movements")
+          .insert([
+            {
+              company_id: product.company_id,
+              product_id: product.id,
+              movement_type: "Sale",
+              quantity,
+              reference_type: "Sale",
+              reference_id: sale.id,
+              notes: `Invoice ${invoiceNumber}`,
+            },
+          ]);
 
-if (stockError) throw stockError;
+      if (movementError) throw movementError;
 
-// Save Stock Movement
+      // Financial Transaction
+      await createTransaction({
+        company_id: product.company_id,
+        reference: invoiceNumber,
+        transaction_type: "Sale",
+        description: `Sale Invoice ${invoiceNumber}`,
+        income: totalAmount,
+        expense: 0,
+        balance: 0,
+      });
 
-const { error: movementError } =
- await supabase
-  .from("stock_movements")
-  .insert([
-    {
-      company_id: product.company_id,
-      product_id: product.id,
-      movement_type: "Sale",
-      quantity: quantity,
-      reference_type: "Sale",
-      reference_id: sale.id,
-      notes: `Invoice ${invoiceNumber}`,
-    },
-  ]);
-
-if (movementError) {
-  console.error("Movement Error:", movementError);
-  alert(JSON.stringify(movementError));
-  return;
-}
       alert("Sale saved successfully!");
 
       setForm({
@@ -144,11 +147,18 @@ if (movementError) {
         quantity: 1,
       });
 
-      loadData();
+      await loadData();
+
+      if (onSuccess) {
+        onSuccess();
+      }
 
     } catch (error) {
       console.error(error);
-      alert("Failed to save sale.");
+      alert(
+        error?.message ||
+        JSON.stringify(error, null, 2)
+      );
     }
   }
 
@@ -208,19 +218,15 @@ if (movementError) {
       />
 
       {selectedProduct && (
-        <div className="bg-slate-100 p-3 rounded">
+        <div className="bg-slate-100 rounded-lg p-4 space-y-2">
           <p>
             Price:
-            <strong>
-              {" "}R {selectedProduct.selling_price}
-            </strong>
+            <strong> R {selectedProduct.selling_price}</strong>
           </p>
 
           <p>
             Available Stock:
-            <strong>
-              {" "}{selectedProduct.stock_quantity}
-            </strong>
+            <strong> {selectedProduct.stock_quantity}</strong>
           </p>
 
           <p>
@@ -240,7 +246,7 @@ if (movementError) {
       <button
         type="button"
         onClick={handleSave}
-        className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700"
+        className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg"
       >
         Save Sale
       </button>

@@ -121,21 +121,59 @@ export default function CustomerManagement() {
         }}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <StatsCard
-          title="Total Customers"
-          value={customers.length}
-          description="Registered customers"
-        />
-      </div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
 
-      <Toolbar>
-        <SearchBar
-          value={search}
-          onChange={setSearch}
-          placeholder="Search customers..."
-        />
-      </Toolbar>
+  <StatsCard
+    title="Total Customers"
+    value={customers.length}
+    description="Registered customers"
+  />
+
+  <StatsCard
+    title="Active Customers"
+    value={
+      customers.filter(
+        (c) => (c.status || "Active") === "Active"
+      ).length
+    }
+    description="Currently active"
+  />
+
+  <StatsCard
+    title="New This Month"
+    value={
+      customers.filter((c) => {
+        if (!c.created_at) return false;
+
+        const created = new Date(c.created_at);
+        const today = new Date();
+
+        return (
+          created.getMonth() === today.getMonth() &&
+          created.getFullYear() === today.getFullYear()
+        );
+      }).length
+    }
+    description="New registrations"
+  />
+
+  <StatsCard
+    title="Lifetime Sales"
+    value="R 0.00"
+    description="CRM Analytics"
+  />
+
+</div>
+
+     <Toolbar>
+
+  <SearchBar
+    value={search}
+    onChange={setSearch}
+    placeholder="Search customer name, phone or email..."
+  />
+
+</Toolbar>
 
       <CustomerDialog
         open={dialogOpen}

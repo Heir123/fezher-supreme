@@ -9,30 +9,34 @@ export default function SupplierForm({
   onCancel,
 }) {
   const [form, setForm] = useState({
-    name: "",
-    contact_person: "",
-    email: "",
-    phone: "",
-    address: "",
-  });
+  company_id: "196a067f-9cc4-4d99-88cd-f905b5a1ad3f",
+  name: "",
+  contact_person: "",
+  email: "",
+  phone: "",
+  address: "",
+  status: "Active",
+});
 
   useEffect(() => {
     if (editingSupplier) {
       setForm({
-        name: editingSupplier.name || "",
-        contact_person: editingSupplier.contact_person || "",
-        email: editingSupplier.email || "",
-        phone: editingSupplier.phone || "",
-        address: editingSupplier.address || "",
-      });
+  name: editingSupplier.name || "",
+  contact_person: editingSupplier.contact_person || "",
+  email: editingSupplier.email || "",
+  phone: editingSupplier.phone || "",
+  address: editingSupplier.address || "",
+  status: editingSupplier.status || "Active",
+});
     } else {
       setForm({
-        name: "",
-        contact_person: "",
-        email: "",
-        phone: "",
-        address: "",
-      });
+  name: "",
+  contact_person: "",
+  email: "",
+  phone: "",
+  address: "",
+  status: "Active",
+});
     }
   }, [editingSupplier]);
 
@@ -60,7 +64,8 @@ export default function SupplierForm({
         email: "",
         phone: "",
         address: "",
-      });
+
+              });
     }
   }
 
@@ -107,31 +112,45 @@ export default function SupplierForm({
         />
       </div>
 
-      <div>
-        <Label>Address</Label>
-        <Input
-          name="address"
-          value={form.address}
-          onChange={handleChange}
-          placeholder="Address"
-        />
-      </div>
+     <div>
+  <Label>Address</Label>
+  <Input
+    name="address"
+    value={form.address}
+    onChange={handleChange}
+    placeholder="Address"
+  />
+</div>
 
-      <div className="flex gap-2 pt-2">
-        <Button type="submit">
-          {editingSupplier ? "Update Supplier" : "Add Supplier"}
-        </Button>
+<div>
+  <Label>Status</Label>
 
-        {editingSupplier && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onCancel}
-          >
-            Cancel
-          </Button>
-        )}
-      </div>
+  <select
+    name="status"
+    value={form.status}
+    onChange={handleChange}
+    className="w-full border rounded-md p-2"
+  >
+    <option value="Active">Active</option>
+    <option value="Inactive">Inactive</option>
+  </select>
+</div>
+
+<div className="flex gap-2 pt-2">
+  <Button type="submit">
+    {editingSupplier ? "Update Supplier" : "Add Supplier"}
+  </Button>
+
+  {editingSupplier && (
+    <Button
+      type="button"
+      variant="outline"
+      onClick={onCancel}
+    >
+      Cancel
+    </Button>
+  )}
+</div>
     </form>
   );
 }

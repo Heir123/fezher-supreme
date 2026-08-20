@@ -1,22 +1,44 @@
-import { Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { getCurrentUser } from "@/services/authService";
+import { Navigate } from "react-router-dom";
+import { getCurrentUser } from "../services/authService";
 
 export default function ProtectedRoute({ children }) {
-  const [user, setUser] = useState(undefined);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function checkUser() {
-      const currentUser = await getCurrentUser();
-      setUser(currentUser);
-    }
+    let mounted = true;
+
+    const checkUser = async () => {
+      try {
+        const currentUser = await getCurrentUser();
+
+        if (mounted) {
+          setUser(currentUser);
+        }
+      } catch (error) {
+        console.error("ProtectedRoute error:", error);
+
+        if (mounted) {
+          setUser(null);
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
 
     checkUser();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  if (user === undefined) {
+  if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex min-h-screen items-center justify-center">
         Loading...
       </div>
     );

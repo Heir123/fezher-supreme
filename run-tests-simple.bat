@@ -1,0 +1,26 @@
+@echo off
+echo ========================================
+echo  Running BizFlow Test Suite
+echo ========================================
+echo.
+
+echo [1/4] Running simple test...
+npx vitest --run --pool=forks --isolate=false src/tests/simple.test.jsx
+echo.
+
+echo [2/4] Running Button test...
+npx vitest --run --pool=forks --isolate=false src/components/tests/Button.test.jsx
+echo.
+
+echo [3/4] Running Navbar test...
+npx vitest --run --pool=forks --isolate=false src/components/tests/Navbar.test.jsx
+echo.
+
+echo [4/4] Running authService test...
+npx vitest --run --pool=forks --isolate=false src/services/__tests__/authService.test.js
+echo.
+
+echo ========================================
+echo  All tests completed!
+echo ========================================
+pause

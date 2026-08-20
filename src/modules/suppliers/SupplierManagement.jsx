@@ -83,22 +83,34 @@ export default function SupplierManagement() {
   }
 
   async function confirmDelete() {
-    if (!supplierToDelete) return;
+  if (!supplierToDelete) return;
 
-    try {
-      await deleteSupplier(supplierToDelete);
+  try {
+    await deleteSupplier(supplierToDelete);
 
-      toast.success("Supplier deleted successfully.");
+    toast.success("Supplier deleted successfully.");
 
-      setSupplierToDelete(null);
-      setConfirmOpen(false);
+    setSupplierToDelete(null);
+    setConfirmOpen(false);
 
-      await loadSuppliers();
-    } catch (error) {
-      console.error(error);
+    await loadSuppliers();
+
+  } catch (error) {
+
+    if (
+      error.message?.includes("purchases_supplier_id_fkey") ||
+      error.code === "23503"
+    ) {
+      toast.error(
+        "This supplier cannot be deleted because it has purchase history."
+      );
+    } else {
       toast.error("Failed to delete supplier.");
     }
+
+    console.error(error);
   }
+}
 
   function handleCancel() {
     setEditingSupplier(null);
@@ -114,30 +126,63 @@ export default function SupplierManagement() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Supplier Management"
-        description="Manage all suppliers in the system."
-        buttonText="+ New Supplier"
-        onButtonClick={() => {
-          setEditingSupplier(null);
-          setDialogOpen(true);
-        }}
-      />
+  title="Supplier Management"
+  description="Manage suppliers, purchases and supplier information."
+  buttonText="+ New Supplier"
+  onButtonClick={() => {
+    setEditingSupplier(null);
+    setDialogOpen(true);
+  }}
+/>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <StatsCard
-          title="Total Suppliers"
-          value={suppliers.length}
-          description="Registered suppliers"
-        />
-      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
 
+  <StatsCard
+    title="Total Suppliers"
+    value={suppliers.length}
+    description="Registered suppliers"
+    color="blue"
+    icon="🏢"
+  />
+
+  <StatsCard
+    title="Active"
+    value={suppliers.filter(s => s.status === "Active").length}
+    description="Currently active"
+    color="green"
+    icon="🟢"
+  />
+
+  <StatsCard
+    title="Inactive"
+    value={suppliers.filter(s => s.status === "Inactive").length}
+    description="Disabled suppliers"
+    color="red"
+    icon="🔴"
+  />
+
+  <StatsCard
+    title="Total Purchases"
+    value={`R ${suppliers.reduce((sum, s) => sum + (Number(s.total_purchases || 0)), 0).toLocaleString()}`}
+    description="Supplier purchases"
+    color="purple"
+    icon="💰"
+  />
+
+</div>
       <Toolbar>
-        <SearchBar
-          value={search}
-          onChange={setSearch}
-          placeholder="Search suppliers..."
-        />
-      </Toolbar>
+
+  <SearchBar
+    value={search}
+    onChange={setSearch}
+    placeholder="Search supplier, phone or email..."
+  />
+
+  <button className="px-4 py-2 rounded-lg border">
+    Export
+  </button>
+
+</Toolbar>
 
       <SupplierDialog
         open={dialogOpen}

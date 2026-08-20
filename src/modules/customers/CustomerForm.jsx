@@ -8,28 +8,28 @@ export default function CustomerForm({
   editingCustomer,
   onCancel,
 }) {
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    address: "",
-  });
+ const [form, setForm] = useState({
+  name: "",
+  email: "",
+  phone: "",
+  address: "",
+});
 
   useEffect(() => {
     if (editingCustomer) {
-      setForm({
-        name: editingCustomer.name || "",
-        email: editingCustomer.email || "",
-        phone: editingCustomer.phone || "",
-        address: editingCustomer.address || "",
-      });
+  setForm({
+  name: editingCustomer.name || "",
+  email: editingCustomer.email || "",
+  phone: editingCustomer.phone || "",
+  address: editingCustomer.address || "",
+});
     } else {
-      setForm({
-        name: "",
-        email: "",
-        phone: "",
-        address: "",
-      });
+     setForm({
+  name: "",
+  email: "",
+  phone: "",
+  address: "",
+});
     }
   }, [editingCustomer]);
 
@@ -62,6 +62,16 @@ export default function CustomerForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+  <Label>Customer Code</Label>
+
+  <Input
+    name="customer_code"
+    value={form.customer_code}
+    readOnly
+    className="bg-slate-100"
+  />
+</div>
       <div>
         <Label>Customer Name</Label>
         <Input

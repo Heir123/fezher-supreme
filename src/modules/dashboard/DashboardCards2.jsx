@@ -39,13 +39,13 @@ export default function DashboardCards2({ summary = {} }) {
     },
     {
       title: "Customers",
-      value: summary.customers || 0,
+      value: summary.totalCustomers || 0,  // ✅ Use totalCustomers (the count)
       icon: <Users size={26} />,
       color: "bg-indigo-600",
     },
     {
       title: "Products",
-      value: summary.products || 0,
+      value: summary.totalProducts || 0,  // ✅ Use totalProducts (the count)
       icon: <Package size={26} />,
       color: "bg-purple-600",
     },
