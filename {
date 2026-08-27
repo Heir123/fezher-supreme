@@ -1,1 +1,1 @@
-export const updateProduct = async (id, product) =
+export const verifyEmail = async (token) =

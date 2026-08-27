@@ -1,95 +1,127 @@
-import { supabase } from "./supabase";
+ import { supabase } from './supabase'
 
-/*
-|--------------------------------------------------------------------------
-| Company ID
-|--------------------------------------------------------------------------
-*/
+export const customerService = {
+  // Get all customers
+  getCustomers: async () => {
+    try {
+      const { data, error } = await supabase
+        .from('customers')
+        .select('*')
+        .order('name')
+      
+      if (error) throw error
+      return { data: data || [], error: null }
+    } catch (error) {
+      console.error('getCustomers error:', error)
+      return { data: [], error: error.message }
+    }
+  },
 
-const COMPANY_ID = "196a067f-9cc4-4d99-88cd-f905b5a1ad3f";
+  // Get a single customer by ID
+  getCustomerById: async (id) => {
+    try {
+      const { data, error } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('id', id)
+        .single()
+      
+      if (error) throw error
+      return { data, error: null }
+    } catch (error) {
+      return { data: null, error: error.message }
+    }
+  },
 
-/*
-|--------------------------------------------------------------------------
-| Get All Customers
-|--------------------------------------------------------------------------
-*/
+  // Create a new customer
+  createCustomer: async (customer) => {
+    try {
+      const dbCustomer = {
+        name: customer.name,
+        email: customer.email || null,
+        phone: customer.phone || null,
+        address: customer.address || null,
+        company_id: customer.company_id || '196a067f-9cc4-4d99-88cd-f905b5a1ad3f',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+      
+      const { data, error } = await supabase
+        .from('customers')
+        .insert([dbCustomer])
+        .select()
+        .single()
+      
+      if (error) throw error
+      return { data, error: null }
+    } catch (error) {
+      console.error('createCustomer error:', error)
+      return { data: null, error: error.message }
+    }
+  },
 
-export async function getCustomers() {
-  const { data, error } = await supabase
-    .from("customers")
-    .select("*")
-    .order("name", { ascending: true });
+  // Update a customer
+  updateCustomer: async (id, updates) => {
+    try {
+      const dbUpdates = {
+        name: updates.name,
+        email: updates.email || null,
+        phone: updates.phone || null,
+        address: updates.address || null,
+        updated_at: new Date().toISOString()
+      }
+      
+      const { data, error } = await supabase
+        .from('customers')
+        .update(dbUpdates)
+        .eq('id', id)
+        .select()
+        .single()
+      
+      if (error) throw error
+      return { data, error: null }
+    } catch (error) {
+      return { data: null, error: error.message }
+    }
+  },
 
-  if (error) throw error;
+  // Delete a customer
+  deleteCustomer: async (id) => {
+    try {
+      const { error } = await supabase
+        .from('customers')
+        .delete()
+        .eq('id', id)
+      
+      if (error) throw error
+      return { error: null }
+    } catch (error) {
+      return { error: error.message }
+    }
+  },
 
-  return data;
-}
-
-/*
-|--------------------------------------------------------------------------
-| Add Customer
-|--------------------------------------------------------------------------
-*/
-
-export async function addCustomer(customer) {
-  const payload = {
-    company_id: COMPANY_ID,
-    ...customer,
-  };
-
-  console.log("Saving Customer:", payload);
-
-  const { data, error } = await supabase
-    .from("customers")
-    .insert([payload])
-    .select()
-    .single();
-
-  if (error) {
-    console.error(error);
-    throw error;
+  // Get customers with sales count
+  getCustomersWithSales: async () => {
+    try {
+      const { data, error } = await supabase
+        .from('customers')
+        .select(`
+          *,
+          sales (id, total_amount)
+        `)
+        .order('name')
+      
+      if (error) throw error
+      
+      const transformedData = data?.map(customer => ({
+        ...customer,
+        total_sales: customer.sales?.length || 0,
+        total_spent: customer.sales?.reduce((sum, sale) => sum + (sale.total_amount || 0), 0) || 0
+      })) || []
+      
+      return { data: transformedData, error: null }
+    } catch (error) {
+      return { data: [], error: error.message }
+    }
   }
-
-  return data;
-}
-
-/*
-|--------------------------------------------------------------------------
-| Update Customer
-|--------------------------------------------------------------------------
-*/
-
-export async function updateCustomer(id, customer) {
-  const payload = {
-    company_id: COMPANY_ID,
-    ...customer,
-  };
-
-  const { data, error } = await supabase
-    .from("customers")
-    .update(payload)
-    .eq("id", id)
-    .select()
-    .single();
-
-  if (error) throw error;
-
-  return data;
-}
-
-/*
-|--------------------------------------------------------------------------
-| Delete Customer
-|--------------------------------------------------------------------------
-*/
-
-export async function deleteCustomer(id) {
-  const { error } = await supabase
-    .from("customers")
-    .delete()
-    .eq("id", id);
-
-  if (error) throw error;
-
-  return true;
 }

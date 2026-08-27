@@ -1,1 +1,1 @@
- 
+// Auth Service - Authentication functions

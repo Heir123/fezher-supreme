@@ -1,0 +1,1 @@
+    const hasRequiredRole = requiredRoles.some(role =

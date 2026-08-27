@@ -1,62 +1,278 @@
-import { supabase } from "./supabase";
+ import { supabase } from './supabase'
 
-export async function getInventorySummary() {
+export const inventoryService = {
+  // Get all inventory with product details
+  getInventory: async () => {
+    try {
+      const { data, error } = await supabase
+        .from('inventory')
+        .select(`
+          *,
+          products (
+            id,
+            name,
+            selling_price,
+            sku,
+            description
+          )
+        `)
+        .order('created_at', { ascending: false })
+      
+      if (error) throw error
+      return { data: data || [], error: null }
+    } catch (error) {
+      console.error('getInventory error:', error)
+      return { data: [], error: error.message }
+    }
+  },
 
-  const { data, error } = await supabase
-    .from("products")
-    .select(`
-      id,
-      name,
-      stock_quantity,
-      minimum_stock,
-      cost_price
-    `);
+  // Get inventory by product
+  getInventoryByProduct: async (productId) => {
+    try {
+      const { data, error } = await supabase
+        .from('inventory')
+        .select('*')
+        .eq('product_id', productId)
+      
+      if (error) throw error
+      return { data: data || [], error: null }
+    } catch (error) {
+      return { data: [], error: error.message }
+    }
+  },
 
-  if (error) throw error;
+  // Get inventory by warehouse
+  getInventoryByWarehouse: async (warehouse) => {
+    try {
+      const { data, error } = await supabase
+        .from('inventory')
+        .select(`
+          *,
+          products (
+            id,
+            name,
+            selling_price,
+            sku
+          )
+        `)
+        .eq('warehouse', warehouse)
+      
+      if (error) throw error
+      return { data: data || [], error: null }
+    } catch (error) {
+      return { data: [], error: error.message }
+    }
+  },
 
-  const totalProducts = data.length;
+  // Update inventory quantity
+  updateQuantity: async (inventoryId, quantity, movementType, notes = '') => {
+    try {
+      // Get current inventory
+      const { data: current, error: getError } = await supabase
+        .from('inventory')
+        .select('quantity, product_id')
+        .eq('id', inventoryId)
+        .single()
+      
+      if (getError) throw getError
 
-  const lowStock = data.filter(
-    p =>
-      Number(p.stock_quantity) <=
-      Number(p.minimum_stock)
-  ).length;
+      // Update inventory
+      const { data, error } = await supabase
+        .from('inventory')
+        .update({ 
+          quantity, 
+          updated_at: new Date().toISOString() 
+        })
+        .eq('id', inventoryId)
+        .select()
+        .single()
+      
+      if (error) throw error
 
-  const outOfStock = data.filter(
-    p =>
-      Number(p.stock_quantity) === 0
-  ).length;
+      // Log movement
+      const { error: movementError } = await supabase
+        .from('inventory_movements')
+        .insert([{
+          inventory_id: inventoryId,
+          product_id: current.product_id,
+          quantity_change: quantity - current.quantity,
+          previous_quantity: current.quantity,
+          new_quantity: quantity,
+          movement_type: movementType,
+          notes: notes,
+          created_at: new Date().toISOString()
+        }])
+      
+      if (movementError) throw movementError
 
-  const inventoryValue = data.reduce(
-    (sum, p) =>
-      sum +
-      Number(p.stock_quantity) *
-      Number(p.cost_price),
-    0
-  );
+      return { data, error: null }
+    } catch (error) {
+      return { data: null, error: error.message }
+    }
+  },
 
-  return {
-    totalProducts,
-    lowStock,
-    outOfStock,
-    inventoryValue,
-  };
-}
+  // Add stock
+  addStock: async (productId, quantity, warehouse = 'Main', notes = '') => {
+    try {
+      // Check if inventory exists
+      const { data: existing } = await supabase
+        .from('inventory')
+        .select('*')
+        .eq('product_id', productId)
+        .eq('warehouse', warehouse)
+        .maybeSingle()
 
-export async function getRecentMovements() {
+      if (existing) {
+        return await inventoryService.updateQuantity(
+          existing.id, 
+          existing.quantity + quantity, 
+          'stock_in', 
+          notes
+        )
+      } else {
+        // Create new inventory
+        const { data, error } = await supabase
+          .from('inventory')
+          .insert([{
+            product_id: productId,
+            quantity: quantity,
+            warehouse: warehouse,
+            status: 'available',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }])
+          .select()
+          .single()
+        
+        if (error) throw error
+        return { data, error: null }
+      }
+    } catch (error) {
+      console.error('addStock error:', error)
+      return { data: null, error: error.message }
+    }
+  },
 
-  const { data, error } = await supabase
-    .from("stock_movements")
-    .select(`
-      *,
-      products(name)
-    `)
-    .order("created_at", {
-      ascending: false,
-    })
-    .limit(10);
+  // Remove stock
+  removeStock: async (productId, quantity, warehouse = 'Main', notes = '') => {
+    try {
+      const { data: existing } = await supabase
+        .from('inventory')
+        .select('*')
+        .eq('product_id', productId)
+        .eq('warehouse', warehouse)
+        .maybeSingle()
 
-  if (error) throw error;
+      if (!existing) {
+        return { data: null, error: 'Product not found in inventory' }
+      }
 
-  return data;
+      if (existing.quantity < quantity) {
+        return { data: null, error: 'Insufficient stock' }
+      }
+
+      return await inventoryService.updateQuantity(
+        existing.id,
+        existing.quantity - quantity,
+        'stock_out',
+        notes
+      )
+    } catch (error) {
+      console.error('removeStock error:', error)
+      return { data: null, error: error.message }
+    }
+  },
+
+  // Get low stock items
+  getLowStockItems: async (threshold = 10) => {
+    try {
+      const { data, error } = await supabase
+        .from('inventory')
+        .select(`
+          *,
+          products (
+            id,
+            name,
+            selling_price,
+            sku
+          )
+        `)
+        .lt('quantity', threshold)
+        .order('quantity')
+      
+      if (error) throw error
+      return { data: data || [], error: null }
+    } catch (error) {
+      return { data: [], error: error.message }
+    }
+  },
+
+  // Get inventory movements
+  getMovements: async (inventoryId = null, limit = 50) => {
+    try {
+      let query = supabase
+        .from('inventory_movements')
+        .select(`
+          *,
+          products (
+            id,
+            name,
+            sku
+          ),
+          profiles (
+            full_name
+          )
+        `)
+        .order('created_at', { ascending: false })
+        .limit(limit)
+
+      if (inventoryId) {
+        query = query.eq('inventory_id', inventoryId)
+      }
+
+      const { data, error } = await query
+      if (error) throw error
+      return { data: data || [], error: null }
+    } catch (error) {
+      return { data: [], error: error.message }
+    }
+  },
+
+  // Get inventory summary
+  getInventorySummary: async () => {
+    try {
+      const { data, error } = await supabase
+        .from('inventory')
+        .select('quantity, status, warehouse')
+      
+      if (error) throw error
+      
+      const summary = {
+        totalItems: data?.length || 0,
+        totalQuantity: data?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0,
+        byWarehouse: {},
+        byStatus: {}
+      }
+
+      data?.forEach(item => {
+        // By warehouse
+        if (!summary.byWarehouse[item.warehouse]) {
+          summary.byWarehouse[item.warehouse] = { count: 0, quantity: 0 }
+        }
+        summary.byWarehouse[item.warehouse].count += 1
+        summary.byWarehouse[item.warehouse].quantity += item.quantity || 0
+
+        // By status
+        if (!summary.byStatus[item.status]) {
+          summary.byStatus[item.status] = { count: 0, quantity: 0 }
+        }
+        summary.byStatus[item.status].count += 1
+        summary.byStatus[item.status].quantity += item.quantity || 0
+      })
+
+      return { data: summary, error: null }
+    } catch (error) {
+      return { data: null, error: error.message }
+    }
+  }
 }
