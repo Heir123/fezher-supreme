@@ -13,14 +13,18 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // ============================================
-// CORS CONFIGURATION
+// CORS CONFIGURATION - PRODUCTION READY
 // ============================================
 
 const corsOptions = {
   origin: [
     'http://localhost:5173',
     'http://localhost:5174',
-    'http://127.0.0.1:5173'
+    'http://127.0.0.1:5173',
+    'https://fezher-supreme.vercel.app',
+    'https://fezher-supreme-git-main.vercel.app',
+    'https://fezher-supreme.vercel.app',
+    process.env.CORS_ORIGIN || '*'
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -46,7 +50,13 @@ app.use(express.json());
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: ['http://localhost:5173', 'http://localhost:5174', 'http://127.0.0.1:5173'],
+    origin: [
+      'http://localhost:5173',
+      'http://localhost:5174',
+      'http://127.0.0.1:5173',
+      'https://fezher-supreme.vercel.app',
+      'https://fezher-supreme-git-main.vercel.app'
+    ],
     methods: ['GET', 'POST'],
     credentials: true
   }
@@ -56,13 +66,11 @@ const io = socketIo(server, {
 // WEBSOCKET CONNECTION HANDLING
 // ============================================
 
-// Store connected clients by organization
 const clients = new Map();
 
 io.on('connection', (socket) => {
   console.log('🔌 New client connected:', socket.id);
 
-  // Join organization room
   socket.on('join-organization', (organizationId) => {
     if (organizationId) {
       socket.join(`org-${organizationId}`);
@@ -70,49 +78,46 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Handle real-time events
   socket.on('new-sale', (data) => {
-    console.log('💰 New sale event:', data);
-    // Broadcast to all clients in the organization
     io.to(`org-${data.organizationId}`).emit('sale-created', data);
   });
 
   socket.on('new-expense', (data) => {
-    console.log('💳 New expense event:', data);
     io.to(`org-${data.organizationId}`).emit('expense-created', data);
   });
 
   socket.on('new-product', (data) => {
-    console.log('📦 New product event:', data);
     io.to(`org-${data.organizationId}`).emit('product-created', data);
   });
 
   socket.on('new-customer', (data) => {
-    console.log('👤 New customer event:', data);
     io.to(`org-${data.organizationId}`).emit('customer-created', data);
   });
 
   socket.on('inventory-update', (data) => {
-    console.log('📊 Inventory update:', data);
     io.to(`org-${data.organizationId}`).emit('inventory-changed', data);
   });
 
   socket.on('notification', (data) => {
-    console.log('🔔 Notification:', data);
     io.to(`org-${data.organizationId}`).emit('new-notification', data);
   });
 
-  // Handle dashboard refresh
   socket.on('request-dashboard-update', (data) => {
-    console.log('📊 Dashboard refresh requested:', data.organizationId);
     io.to(`org-${data.organizationId}`).emit('dashboard-refresh');
   });
 
-  // Handle disconnection
   socket.on('disconnect', () => {
     console.log('🔌 Client disconnected:', socket.id);
   });
 });
+
+// ============================================
+// WEBSOCKET EMITTER HELPERS
+// ============================================
+
+const emitRealTimeEvent = (organizationId, event, data) => {
+  io.to(`org-${organizationId}`).emit(event, data);
+};
 
 // ============================================
 // RATE LIMITING
@@ -200,12 +205,17 @@ pool.connect((err) => {
 });
 
 // ============================================
-// WEBSOCKET EMITTER HELPERS
+// HEALTH CHECK ENDPOINT
 // ============================================
 
-const emitRealTimeEvent = (organizationId, event, data) => {
-  io.to(`org-${organizationId}`).emit(event, data);
-};
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    uptime: process.uptime()
+  });
+});
 
 // ============================================
 // AUTH ROUTES WITH VALIDATION
@@ -234,16 +244,16 @@ app.post('/api/auth/login', validateLogin, handleValidationErrors, async (req, r
     );
 
     delete user.password_hash;
-    res.json({ 
-      token, 
-      user, 
-      organization: { 
-        id: user.org_id, 
-        name: user.org_name, 
+    res.json({
+      token,
+      user,
+      organization: {
+        id: user.org_id,
+        name: user.org_name,
         slug: user.org_slug,
         currency: user.currency || 'USD',
         currency_symbol: user.currency_symbol || '$'
-      } 
+      }
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -296,15 +306,15 @@ app.post('/api/auth/signup', validateSignup, handleValidationErrors, async (req,
 
     await client.query('COMMIT');
     client.release();
-    res.status(201).json({ 
-      success: true, 
-      token, 
-      user, 
-      organization: { 
-        ...organization, 
-        currency: 'USD', 
-        currency_symbol: '$' 
-      } 
+    res.status(201).json({
+      success: true,
+      token,
+      user,
+      organization: {
+        ...organization,
+        currency: 'USD',
+        currency_symbol: '$'
+      }
     });
   } catch (error) {
     await client.query('ROLLBACK');
@@ -349,9 +359,9 @@ app.put('/api/organizations/:id/currency', async (req, res) => {
       return res.status(404).json({ error: 'Organization not found' });
     }
 
-    res.json({ 
-      success: true, 
-      currency, 
+    res.json({
+      success: true,
+      currency,
       symbol,
       organization: result.rows[0]
     });
@@ -384,11 +394,11 @@ app.get('/api/currencies/:code', async (req, res) => {
       'SELECT code, name, symbol, rate, is_active FROM currencies WHERE code = $1',
       [code.toUpperCase()]
     );
-    
+
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Currency not found' });
     }
-    
+
     res.json(result.rows[0]);
   } catch (error) {
     console.error('Error getting currency:', error);
@@ -478,13 +488,12 @@ app.post('/api/products', validateProduct, handleValidationErrors, async (req, r
        VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7) RETURNING *`,
       [orgId, name, category, price, stock, description, currency || 'USD']
     );
-    
-    // Emit real-time event
+
     emitRealTimeEvent(orgId, 'product-created', {
       product: result.rows[0],
       timestamp: new Date().toISOString()
     });
-    
+
     res.status(201).json(result.rows[0]);
   } catch (error) {
     res.status(500).json({ error: 'Failed to create product' });
@@ -500,13 +509,12 @@ app.put('/api/products/:id', validateProduct, handleValidationErrors, async (req
       [name, category, price, stock, description, currency, req.params.id, orgId]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Product not found' });
-    
-    // Emit real-time event
+
     emitRealTimeEvent(orgId, 'product-updated', {
       product: result.rows[0],
       timestamp: new Date().toISOString()
     });
-    
+
     res.json(result.rows[0]);
   } catch (error) {
     res.status(500).json({ error: 'Failed to update product' });
@@ -517,16 +525,52 @@ app.delete('/api/products/:id', async (req, res) => {
   try {
     const orgId = req.headers['x-organization-id'];
     await pool.query('DELETE FROM products WHERE id = $1 AND organization_id = $2', [req.params.id, orgId]);
-    
-    // Emit real-time event
+
     emitRealTimeEvent(orgId, 'product-deleted', {
       productId: req.params.id,
       timestamp: new Date().toISOString()
     });
-    
+
     res.json({ message: 'Product deleted' });
   } catch (error) {
     res.status(500).json({ error: 'Failed to delete product' });
+  }
+});
+
+// ============================================
+// CUSTOMER ROUTES WITH REAL-TIME
+// ============================================
+
+app.get('/api/customers', async (req, res) => {
+  try {
+    const orgId = req.headers['x-organization-id'];
+    if (!orgId) return res.status(400).json({ error: 'Organization ID required' });
+    const result = await pool.query('SELECT * FROM customers WHERE organization_id = $1 ORDER BY created_at DESC', [orgId]);
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get customers' });
+  }
+});
+
+app.post('/api/customers', async (req, res) => {
+  try {
+    const orgId = req.headers['x-organization-id'];
+    if (!orgId) return res.status(400).json({ error: 'Organization ID required' });
+    const { name, email, phone } = req.body;
+    const result = await pool.query(
+      `INSERT INTO customers (id, organization_id, name, email, phone)
+       VALUES (gen_random_uuid(), $1, $2, $3, $4) RETURNING *`,
+      [orgId, name, email, phone]
+    );
+
+    emitRealTimeEvent(orgId, 'customer-created', {
+      customer: result.rows[0],
+      timestamp: new Date().toISOString()
+    });
+
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create customer' });
   }
 });
 
@@ -562,13 +606,12 @@ app.post('/api/sales', async (req, res) => {
        VALUES (gen_random_uuid(), $1, $2, $3, $4, $5) RETURNING *`,
       [orgId, customer_id, total_amount, status || 'pending', currency || 'USD']
     );
-    
-    // Emit real-time event
+
     emitRealTimeEvent(orgId, 'sale-created', {
       sale: result.rows[0],
       timestamp: new Date().toISOString()
     });
-    
+
     res.status(201).json(result.rows[0]);
   } catch (error) {
     res.status(500).json({ error: 'Failed to create sale' });
@@ -599,19 +642,18 @@ app.post('/api/expenses', async (req, res) => {
     const orgId = req.headers['x-organization-id'];
     if (!orgId) return res.status(400).json({ error: 'Organization ID required' });
     const { category, amount, description, expense_date, payment_method, currency } = req.body;
-    
+
     const result = await pool.query(
       `INSERT INTO expenses (id, organization_id, category, amount, description, expense_date, payment_method, currency)
        VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7) RETURNING *`,
       [orgId, category || 'Other', amount, description, expense_date || new Date(), payment_method, currency || 'USD']
     );
-    
-    // Emit real-time event
+
     emitRealTimeEvent(orgId, 'expense-created', {
       expense: result.rows[0],
       timestamp: new Date().toISOString()
     });
-    
+
     res.status(201).json(result.rows[0]);
   } catch (error) {
     console.error('Error creating expense:', error);
@@ -623,7 +665,7 @@ app.put('/api/expenses/:id', async (req, res) => {
   try {
     const orgId = req.headers['x-organization-id'];
     const { category, amount, description, expense_date, payment_method, currency } = req.body;
-    
+
     const result = await pool.query(
       `UPDATE expenses 
        SET category = $1, amount = $2, description = $3, expense_date = $4, payment_method = $5, currency = $6
@@ -631,17 +673,16 @@ app.put('/api/expenses/:id', async (req, res) => {
        RETURNING *`,
       [category, amount, description, expense_date, payment_method, currency, req.params.id, orgId]
     );
-    
+
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Expense not found' });
     }
-    
-    // Emit real-time event
+
     emitRealTimeEvent(orgId, 'expense-updated', {
       expense: result.rows[0],
       timestamp: new Date().toISOString()
     });
-    
+
     res.json(result.rows[0]);
   } catch (error) {
     res.status(500).json({ error: 'Failed to update expense' });
@@ -655,17 +696,16 @@ app.delete('/api/expenses/:id', async (req, res) => {
       'DELETE FROM expenses WHERE id = $1 AND organization_id = $2 RETURNING id',
       [req.params.id, orgId]
     );
-    
+
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Expense not found' });
     }
-    
-    // Emit real-time event
+
     emitRealTimeEvent(orgId, 'expense-deleted', {
       expenseId: req.params.id,
       timestamp: new Date().toISOString()
     });
-    
+
     res.json({ message: 'Expense deleted successfully' });
   } catch (error) {
     res.status(500).json({ error: 'Failed to delete expense' });
@@ -731,7 +771,6 @@ app.post('/api/inventory', async (req, res) => {
       [organizationId, name, sku, category, quantity, reorder_point, price, description, itemStatus]
     );
 
-    // Emit real-time event
     emitRealTimeEvent(organizationId, 'inventory-item-added', {
       item: result.rows[0],
       timestamp: new Date().toISOString()
@@ -768,7 +807,6 @@ app.put('/api/inventory/:id', async (req, res) => {
       return res.status(404).json({ error: 'Inventory item not found' });
     }
 
-    // Emit real-time event
     emitRealTimeEvent(organizationId, 'inventory-item-updated', {
       item: result.rows[0],
       timestamp: new Date().toISOString()
@@ -795,7 +833,6 @@ app.delete('/api/inventory/:id', async (req, res) => {
       return res.status(404).json({ error: 'Inventory item not found' });
     }
 
-    // Emit real-time event
     emitRealTimeEvent(organizationId, 'inventory-item-deleted', {
       itemId: id,
       timestamp: new Date().toISOString()
@@ -805,44 +842,6 @@ app.delete('/api/inventory/:id', async (req, res) => {
   } catch (error) {
     console.error('Error deleting inventory item:', error);
     res.status(500).json({ error: 'Failed to delete inventory item' });
-  }
-});
-
-// ============================================
-// CUSTOMER ROUTES WITH REAL-TIME
-// ============================================
-
-app.get('/api/customers', async (req, res) => {
-  try {
-    const orgId = req.headers['x-organization-id'];
-    if (!orgId) return res.status(400).json({ error: 'Organization ID required' });
-    const result = await pool.query('SELECT * FROM customers WHERE organization_id = $1 ORDER BY created_at DESC', [orgId]);
-    res.json(result.rows);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to get customers' });
-  }
-});
-
-app.post('/api/customers', async (req, res) => {
-  try {
-    const orgId = req.headers['x-organization-id'];
-    if (!orgId) return res.status(400).json({ error: 'Organization ID required' });
-    const { name, email, phone } = req.body;
-    const result = await pool.query(
-      `INSERT INTO customers (id, organization_id, name, email, phone)
-       VALUES (gen_random_uuid(), $1, $2, $3, $4) RETURNING *`,
-      [orgId, name, email, phone]
-    );
-    
-    // Emit real-time event
-    emitRealTimeEvent(orgId, 'customer-created', {
-      customer: result.rows[0],
-      timestamp: new Date().toISOString()
-    });
-    
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to create customer' });
   }
 });
 
@@ -890,7 +889,7 @@ app.get('/api/dashboard/stats', async (req, res) => {
   try {
     const orgId = req.headers['x-organization-id'];
     if (!orgId) return res.status(400).json({ error: 'Organization ID required' });
-    
+
     const products = await pool.query('SELECT COUNT(*) as count FROM products WHERE organization_id = $1', [orgId]);
     const customers = await pool.query('SELECT COUNT(*) as count FROM customers WHERE organization_id = $1', [orgId]);
     const sales = await pool.query(
@@ -919,12 +918,11 @@ app.post('/api/refresh-dashboard', async (req, res) => {
     if (!organizationId) {
       return res.status(400).json({ error: 'Organization ID required' });
     }
-    
-    // Emit dashboard refresh event
+
     emitRealTimeEvent(organizationId, 'dashboard-refresh', {
       timestamp: new Date().toISOString()
     });
-    
+
     res.json({ success: true, message: 'Dashboard refresh triggered' });
   } catch (error) {
     console.error('Error refreshing dashboard:', error);
@@ -942,4 +940,5 @@ server.listen(port, () => {
   console.log(`💰 Multi-currency support enabled`);
   console.log(`🔒 Security features: Rate Limiting, Validation, CORS`);
   console.log(`🔌 WebSocket server ready for real-time updates`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
 });
