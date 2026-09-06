@@ -1,176 +1,265 @@
- import React, { useState, useEffect, useRef } from 'react'
-import { chartService } from '../services/chartService'
-import { exportService } from '../services/exportService'
-import SalesTrendChart from '../components/charts/SalesTrendChart'
-import TopProductsChart from '../components/charts/TopProductsChart'
-import SalesStatusChart from '../components/charts/SalesStatusChart'
-import MonthlyRevenueChart from '../components/charts/MonthlyRevenueChart'
-import ExportButtons from '../components/common/ExportButtons'
-import { formatCurrency } from '../utils/helpers'
-import { notificationService } from '../services/notificationService'
-const Analytics = () => {
+ import React, { useState, useEffect } from 'react'
+import { 
+  BarChart3, 
+  TrendingUp, 
+  TrendingDown, 
+  DollarSign, 
+  ShoppingBag, 
+  Users,
+  Package,
+  Calendar,
+  Download,
+  RefreshCw,
+  ChevronDown,
+  Eye,
+  Clock,
+  ArrowUpRight,
+  ArrowDownRight,
+  PieChart,
+  LineChart
+} from 'lucide-react'
+import { useCurrency } from '../context/CurrencyContext'
+import './Analytics.css'
+
+function Analytics() {
+  const { formatCurrency, currency, symbol } = useCurrency()
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [chartData, setChartData] = useState({
-    trend: [],
-    topProducts: [],
-    status: [],
-    monthlyRevenue: []
+  const [timeRange, setTimeRange] = useState('month')
+  const [data, setData] = useState({
+    revenue: { value: 45230, change: 12.5, trend: 'up' },
+    orders: { value: 342, change: 8.2, trend: 'up' },
+    customers: { value: 128, change: 15.3, trend: 'up' },
+    conversion: { value: 3.2, change: 0.8, trend: 'down' }
   })
-  const [days, setDays] = useState(30)
-  
-  const reportRef = useRef(null)
-  const chartRefs = {
-    trend: useRef(null),
-    monthly: useRef(null),
-    topProducts: useRef(null),
-    status: useRef(null)
-  }
 
   useEffect(() => {
-    loadChartData()
-  }, [days])
-
-  const loadChartData = async () => {
-    setLoading(true)
-    setError('')
-    try {
-      const { data, error } = await chartService.getDashboardData()
-      if (error) throw new Error(error)
-      setChartData(data || { trend: [], topProducts: [], status: [], monthlyRevenue: [] })
-    } catch (err) {
-      setError(err.message)
-    } finally {
+    setTimeout(() => {
       setLoading(false)
-    }
-  }
-
-  // Calculate summary stats
-  const totalRevenue = chartData.trend?.reduce((sum, item) => sum + (item.revenue || 0), 0) || 0
-  const totalSales = chartData.trend?.reduce((sum, item) => sum + (item.sales || 0), 0) || 0
-  const avgOrderValue = totalSales > 0 ? totalRevenue / totalSales : 0
-
-  // Export functions
-  const exportReportAsImage = async () => {
-  if (reportRef.current) {
-    const result = await exportService.exportChartAsImage(reportRef.current, 'analytics_report.png')
-    if (result.success) {
-      notificationService.success('Export Successful', 'Image downloaded successfully')
-    } else {
-      notificationService.error('Export Failed', result.error)
-    }
-  }
-}
-
-const exportReportAsPDF = async () => {
-  if (reportRef.current) {
-    const result = await exportService.exportToPDF(reportRef.current, 'analytics_report.pdf', 'Analytics Report')
-    if (result.success) {
-      notificationService.success('Export Successful', 'PDF downloaded successfully')
-    } else {
-      notificationService.error('Export Failed', result.error)
-    }
-  }
-}
-
-const exportDataAsExcel = () => {
-  const exportData = [
-    ...chartData.trend.map(item => ({ type: 'Sales Trend', date: item.date, sales: item.sales, revenue: item.revenue })),
-    ...chartData.topProducts.map(item => ({ type: 'Top Products', name: item.name, quantity: item.total_quantity, revenue: item.total_revenue })),
-    ...chartData.status.map(item => ({ type: 'Sales Status', status: item.name, count: item.count, revenue: item.revenue }))
-  ]
-  const result = exportService.exportToExcel(exportData, 'analytics_data.xlsx', 'Analytics')
-  if (result.success) {
-    notificationService.success('Export Successful', 'Excel file downloaded successfully')
-  } else {
-    notificationService.error('Export Failed', result.error)
-  }
-}
-
-const printReport = () => {
-  if (reportRef.current) {
-    exportService.printReport(reportRef.current)
-    notificationService.info('Print', 'Print window opened')
-  }
-}
+    }, 1000)
+  }, [])
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading analytics...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-        Error loading analytics: {error}
+      <div className="analytics-loading">
+        <div className="analytics-loading-spinner"></div>
+        <p className="analytics-loading-text">Loading analytics...</p>
       </div>
     )
   }
 
   return (
-    <div ref={reportRef}>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">📊 Analytics & Charts</h1>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-600">Period:</label>
-            <select
-              value={days}
-              onChange={(e) => setDays(parseInt(e.target.value))}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="7">Last 7 days</option>
-              <option value="30">Last 30 days</option>
-              <option value="60">Last 60 days</option>
-              <option value="90">Last 90 days</option>
-            </select>
+    <div className="analytics">
+      {/* Header */}
+      <div className="analytics-header">
+        <div>
+          <div className="analytics-badge">
+            <div className="analytics-badge-icon">
+              <BarChart3 size={16} color="white" />
+            </div>
+            <span className="analytics-badge-text">ANALYTICS</span>
           </div>
-          <ExportButtons
-            onExportImage={exportReportAsImage}
-            onExportPDF={exportReportAsPDF}
-            onExportExcel={exportDataAsExcel}
-            onPrint={printReport}
-          />
+          <h1 className="analytics-title">Analytics</h1>
+          <p className="analytics-subtitle">Track your business performance and growth metrics.</p>
+          <p className="analytics-currency-info">Currency: {currency} ({symbol})</p>
+        </div>
+        <div className="analytics-actions">
+          <div className="analytics-time-selector">
+            <button className={`time-btn ${timeRange === 'week' ? 'active' : ''}`} onClick={() => setTimeRange('week')}>Week</button>
+            <button className={`time-btn ${timeRange === 'month' ? 'active' : ''}`} onClick={() => setTimeRange('month')}>Month</button>
+            <button className={`time-btn ${timeRange === 'quarter' ? 'active' : ''}`} onClick={() => setTimeRange('quarter')}>Quarter</button>
+            <button className={`time-btn ${timeRange === 'year' ? 'active' : ''}`} onClick={() => setTimeRange('year')}>Year</button>
+          </div>
+          <button className="analytics-export">
+            <Download size={16} />
+            Export
+          </button>
+          <button className="analytics-refresh">
+            <RefreshCw size={16} />
+          </button>
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-sm font-medium text-gray-500">Total Revenue</p>
-          <p className="text-2xl font-bold text-gray-900">{formatCurrency(totalRevenue)}</p>
+      {/* KPI Cards */}
+      <div className="analytics-kpis">
+        <div className="kpi-card">
+          <div className="kpi-header">
+            <span className="kpi-label">Total Revenue</span>
+            <div className="kpi-icon kpi-icon-green">
+              <DollarSign size={20} color="white" />
+            </div>
+          </div>
+          <div className="kpi-value">{formatCurrency(data.revenue.value)}</div>
+          <div className="kpi-change kpi-change-up">
+            <ArrowUpRight size={14} />
+            {data.revenue.change}% from last month
+          </div>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-sm font-medium text-gray-500">Total Orders</p>
-          <p className="text-2xl font-bold text-gray-900">{totalSales}</p>
+
+        <div className="kpi-card">
+          <div className="kpi-header">
+            <span className="kpi-label">Total Orders</span>
+            <div className="kpi-icon kpi-icon-blue">
+              <ShoppingBag size={20} color="white" />
+            </div>
+          </div>
+          <div className="kpi-value">{data.orders.value.toLocaleString()}</div>
+          <div className="kpi-change kpi-change-up">
+            <ArrowUpRight size={14} />
+            {data.orders.change}% from last month
+          </div>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-sm font-medium text-gray-500">Average Order Value</p>
-          <p className="text-2xl font-bold text-gray-900">{formatCurrency(avgOrderValue)}</p>
+
+        <div className="kpi-card">
+          <div className="kpi-header">
+            <span className="kpi-label">Total Customers</span>
+            <div className="kpi-icon kpi-icon-purple">
+              <Users size={20} color="white" />
+            </div>
+          </div>
+          <div className="kpi-value">{data.customers.value.toLocaleString()}</div>
+          <div className="kpi-change kpi-change-up">
+            <ArrowUpRight size={14} />
+            {data.customers.change}% from last month
+          </div>
+        </div>
+
+        <div className="kpi-card">
+          <div className="kpi-header">
+            <span className="kpi-label">Conversion Rate</span>
+            <div className="kpi-icon kpi-icon-orange">
+              <TrendingUp size={20} color="white" />
+            </div>
+          </div>
+          <div className="kpi-value">{data.conversion.value}%</div>
+          <div className="kpi-change kpi-change-down">
+            <ArrowDownRight size={14} />
+            {data.conversion.change}% from last month
+          </div>
         </div>
       </div>
 
       {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div ref={chartRefs.trend}>
-          <SalesTrendChart data={chartData.trend} />
+      <div className="analytics-charts">
+        {/* Revenue Chart */}
+        <div className="chart-card chart-card-full">
+          <div className="chart-header">
+            <div>
+              <h3 className="chart-title">Revenue Overview</h3>
+              <p className="chart-subtitle">Monthly revenue trend for the current year</p>
+            </div>
+            <div className="chart-actions">
+              <button className="chart-action-btn">
+                <Eye size={16} />
+                Details
+              </button>
+            </div>
+          </div>
+          <div className="chart-placeholder">
+            <div className="chart-placeholder-content">
+              <LineChart size={48} className="chart-placeholder-icon" />
+              <p>Revenue Chart Coming Soon</p>
+              <span>Connect your data source to see revenue trends</span>
+            </div>
+          </div>
         </div>
-        <div ref={chartRefs.monthly}>
-          <MonthlyRevenueChart data={chartData.monthlyRevenue} />
+
+        {/* Orders & Customers */}
+        <div className="chart-card">
+          <div className="chart-header">
+            <h3 className="chart-title">Orders Overview</h3>
+            <span className="chart-badge">+12.5%</span>
+          </div>
+          <div className="chart-placeholder small">
+            <div className="chart-placeholder-content">
+              <ShoppingBag size={32} className="chart-placeholder-icon" />
+              <p>Orders Chart</p>
+            </div>
+          </div>
         </div>
-        <div ref={chartRefs.topProducts}>
-          <TopProductsChart data={chartData.topProducts} />
+
+        <div className="chart-card">
+          <div className="chart-header">
+            <h3 className="chart-title">Customer Growth</h3>
+            <span className="chart-badge">+8.2%</span>
+          </div>
+          <div className="chart-placeholder small">
+            <div className="chart-placeholder-content">
+              <Users size={32} className="chart-placeholder-icon" />
+              <p>Customer Chart</p>
+            </div>
+          </div>
         </div>
-        <div ref={chartRefs.status}>
-          <SalesStatusChart data={chartData.status} />
+
+        {/* Top Products */}
+        <div className="chart-card chart-card-full">
+          <div className="chart-header">
+            <h3 className="chart-title">Top Products</h3>
+            <span className="chart-subtitle">Best selling products this month</span>
+          </div>
+          <div className="top-products">
+            {[
+              { name: 'Product A', sales: 145, revenue: 4250, color: '#3b82f6' },
+              { name: 'Product B', sales: 98, revenue: 3200, color: '#8b5cf6' },
+              { name: 'Product C', sales: 76, revenue: 2800, color: '#10b981' },
+              { name: 'Product D', sales: 54, revenue: 2100, color: '#f59e0b' }
+            ].map((product, i) => (
+              <div key={i} className="product-row">
+                <div className="product-info">
+                  <span className="product-rank">{i + 1}</span>
+                  <span className="product-name">{product.name}</span>
+                </div>
+                <div className="product-stats">
+                  <span className="product-sales">{product.sales} sales</span>
+                  <span className="product-revenue">{formatCurrency(product.revenue)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Recent Activity */}
+        <div className="chart-card chart-card-full">
+          <div className="chart-header">
+            <h3 className="chart-title">Recent Activity</h3>
+            <span className="chart-subtitle">Latest updates from your business</span>
+          </div>
+          <div className="activity-timeline">
+            {[
+              { action: 'New order #1234 placed', amount: 45.00, time: '2 min ago', icon: '🛒' },
+              { action: 'Product "Widget Pro" added to inventory', amount: null, time: '15 min ago', icon: '📦' },
+              { action: 'Monthly revenue target reached', amount: 720.00, time: '1 hour ago', icon: '💰' },
+              { action: 'Low stock alert: Item X', amount: null, time: '3 hours ago', icon: '⚠️' }
+            ].map((item, i) => (
+              <div key={i} className="timeline-item">
+                <div className="timeline-icon">{item.icon}</div>
+                <div className="timeline-content">
+                  <p className="timeline-action">{item.action}</p>
+                  {item.amount !== null && (
+                    <span className="timeline-amount">{formatCurrency(item.amount)}</span>
+                  )}
+                </div>
+                <span className="timeline-time">
+                  <Clock size={12} />
+                  {item.time}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
+
+      {/* Footer */}
+      <footer className="analytics-footer">
+        <div className="analytics-footer-content">
+          <span className="analytics-footer-text">© 2026 Fezher Supreme · Analytics Dashboard</span>
+          <span className="analytics-footer-currency">Currency: {currency} ({symbol})</span>
+          <div className="analytics-footer-links">
+            <a href="#">Privacy</a>
+            <a href="#">Terms</a>
+            <a href="#">Support</a>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }

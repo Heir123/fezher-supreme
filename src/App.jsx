@@ -1,6 +1,10 @@
- import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
+import { CurrencyProvider } from './context/CurrencyContext'
+import { ThemeProvider } from './context/ThemeContext'
+import { NotificationProvider } from './context/NotificationContext'
+import { SocketProvider } from './context/SocketContext'
 import ProtectedRoute from './components/common/ProtectedRoute'
 import WelcomeTour from './components/onboarding/WelcomeTour'
 import HelpCenter from './components/onboarding/HelpCenter'
@@ -22,6 +26,8 @@ import BankReconciliation from './pages/finance/BankReconciliation'
 import BudgetTracking from './pages/finance/BudgetTracking'
 import CashFlow from './pages/finance/CashFlow'
 import FeedbackAdmin from './pages/admin/FeedbackAdmin'
+import Settings from './pages/Settings'
+import Organizations from './pages/admin/Organizations'
 import Layout from './components/layout/Layout'
 
 function App() {
@@ -29,8 +35,7 @@ function App() {
   const [showTour, setShowTour] = useState(false)
 
   useEffect(() => {
-    // Check if user has visited before
-    const hasVisited = localStorage.getItem('bizflow_visited')
+    const hasVisited = localStorage.getItem('fezher_supreme_visited')
     if (!hasVisited) {
       setIsFirstVisit(true)
       setShowTour(true)
@@ -38,7 +43,7 @@ function App() {
   }, [])
 
   const handleTourComplete = () => {
-    localStorage.setItem('bizflow_visited', 'true')
+    localStorage.setItem('fezher_supreme_visited', 'true')
     setIsFirstVisit(false)
     setShowTour(false)
   }
@@ -50,38 +55,51 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/" element={
-            <ProtectedRoute>
-              <>
-                <Layout />
+        <CurrencyProvider>
+          <ThemeProvider>
+            <NotificationProvider>
+              <SocketProvider>
+                <Routes>
+                  {/* Public Routes */}
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/signup" element={<Signup />} />
+
+                  {/* Protected Routes */}
+                  <Route path="/" element={
+                    <ProtectedRoute>
+                      <Layout />
+                    </ProtectedRoute>
+                  }>
+                    <Route index element={<Dashboard />} />
+                    <Route path="dashboard" element={<Dashboard />} />
+                    <Route path="analytics" element={<Analytics />} />
+                    <Route path="profit-loss" element={<ProfitLoss />} />
+                    <Route path="inventory" element={<Inventory />} />
+                    <Route path="products" element={<Products />} />
+                    <Route path="sales" element={<Sales />} />
+                    <Route path="expenses" element={<Expenses />} />
+                    <Route path="customers" element={<Customers />} />
+                    <Route path="users" element={<Users />} />
+                    <Route path="email-reports" element={<EmailReports />} />
+                    <Route path="bank-reconciliation" element={<BankReconciliation />} />
+                    <Route path="budget" element={<BudgetTracking />} />
+                    <Route path="cash-flow" element={<CashFlow />} />
+                    <Route path="feedback" element={<FeedbackAdmin />} />
+                    <Route path="settings" element={<Settings />} />
+                    <Route path="organizations" element={<Organizations />} />
+                  </Route>
+                </Routes>
+
+                {/* Onboarding Components */}
                 <WelcomeTour 
                   isFirstVisit={showTour} 
                   onComplete={handleTourComplete} 
                 />
                 <HelpCenter onStartTour={handleStartTour} />
-              </>
-            </ProtectedRoute>
-          }>
-            <Route index element={<Dashboard />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="analytics" element={<Analytics />} />
-            <Route path="profit-loss" element={<ProfitLoss />} />
-            <Route path="inventory" element={<Inventory />} />
-            <Route path="products" element={<Products />} />
-            <Route path="sales" element={<Sales />} />
-            <Route path="expenses" element={<Expenses />} />
-            <Route path="customers" element={<Customers />} />
-            <Route path="users" element={<Users />} />
-            <Route path="email-reports" element={<EmailReports />} />
-            <Route path="bank-reconciliation" element={<BankReconciliation />} />
-            <Route path="budget" element={<BudgetTracking />} />
-            <Route path="cash-flow" element={<CashFlow />} />
-            <Route path="feedback" element={<FeedbackAdmin />} />
-          </Route>
-        </Routes>
+              </SocketProvider>
+            </NotificationProvider>
+          </ThemeProvider>
+        </CurrencyProvider>
       </AuthProvider>
     </BrowserRouter>
   )

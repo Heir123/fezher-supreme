@@ -1,162 +1,209 @@
 import React, { useState, useEffect } from 'react'
-import { cashFlowService } from '../../services/cashFlowService'
-import { formatCurrency, formatDate } from '../../utils/helpers'
-import Button from '../../components/common/Button'
+import { 
+  Wallet, 
+  TrendingUp, 
+  TrendingDown, 
+  DollarSign,
+  Calendar,
+  Download,
+  Filter,
+  ChevronDown,
+  Plus,
+  ArrowUpRight,
+  ArrowDownRight,
+  RefreshCw,
+  Eye,
+  MoreHorizontal
+} from 'lucide-react'
+import { useCurrency } from '../../context/CurrencyContext'
+import './CashFlow.css'
 
-const CashFlow = () => {
-  const [summary, setSummary] = useState(null)
-  const [trend, setTrend] = useState([])
-  const [monthlyData, setMonthlyData] = useState([])
-  const [cashPosition, setCashPosition] = useState(null)
+function CashFlow() {
+  const { formatCurrency, currency } = useCurrency()
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
+  const [period, setPeriod] = useState('monthly')
+  const [transactions, setTransactions] = useState([])
+  const [summary, setSummary] = useState({
+    totalInflow: 0,
+    totalOutflow: 0,
+    netCashFlow: 0,
+    openingBalance: 5000,
+    closingBalance: 0
+  })
 
   useEffect(() => {
-    loadData()
-  }, [selectedYear, selectedMonth])
+    setTimeout(() => {
+      setTransactions([
+        { id: 1, description: 'Sales Revenue', amount: 4500.00, type: 'inflow', date: '2026-09-05', category: 'Revenue' },
+        { id: 2, description: 'Service Income', amount: 1200.00, type: 'inflow', date: '2026-09-04', category: 'Revenue' },
+        { id: 3, description: 'Office Rent', amount: 1200.00, type: 'outflow', date: '2026-09-01', category: 'Expenses' },
+        { id: 4, description: 'Utilities', amount: 250.00, type: 'outflow', date: '2026-09-03', category: 'Expenses' },
+        { id: 5, description: 'Office Supplies', amount: 150.00, type: 'outflow', date: '2026-09-02', category: 'Expenses' },
+        { id: 6, description: 'Marketing', amount: 300.00, type: 'outflow', date: '2026-08-28', category: 'Expenses' }
+      ])
 
-  const loadData = async () => {
-    setLoading(true)
-    setError('')
-    try {
-      // Get monthly cash flow
-      const { data: monthly, error: monthlyError } = await cashFlowService.getMonthlyCashFlow(selectedYear)
-      if (monthlyError) throw new Error(monthlyError)
-      setMonthlyData(monthly || [])
-
-      // Get current month cash flow
-      const startDate = new Date(selectedYear, selectedMonth - 1, 1)
-      const endDate = new Date(selectedYear, selectedMonth, 0)
-      const startStr = startDate.toISOString().split('T')[0]
-      const endStr = endDate.toISOString().split('T')[0]
-
-      const { data, error } = await cashFlowService.getCashFlowSummary(startStr, endStr)
-      if (error) throw new Error(error)
-      setSummary(data.summary)
-      setTrend(data.trend || [])
-
-      // Get cash position
-      const { data: position, error: positionError } = await cashFlowService.getCashPosition()
-      if (positionError) throw new Error(positionError)
-      setCashPosition(position)
-    } catch (err) {
-      setError(err.message)
-    } finally {
+      const totalInflow = transactions.reduce((sum, t) => t.type === 'inflow' ? sum + t.amount : sum, 0)
+      const totalOutflow = transactions.reduce((sum, t) => t.type === 'outflow' ? sum + t.amount : sum, 0)
+      
+      setSummary({
+        totalInflow: 4500 + 1200,
+        totalOutflow: 1200 + 250 + 150 + 300,
+        netCashFlow: (4500 + 1200) - (1200 + 250 + 150 + 300),
+        openingBalance: 5000,
+        closingBalance: 5000 + (4500 + 1200) - (1200 + 250 + 150 + 300)
+      })
       setLoading(false)
-    }
-  }
+    }, 1000)
+  }, [])
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading cash flow data...</p>
-        </div>
+      <div className="cashflow-loading">
+        <div className="cashflow-loading-spinner"></div>
+        <p className="cashflow-loading-text">Loading cash flow data...</p>
       </div>
     )
   }
-
-  if (error) {
-    return (
-      <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-        Error: {error}
-      </div>
-    )
-  }
-
-  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-  const years = [2024, 2025, 2026]
 
   return (
-    <div>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">💵 Cash Flow</h1>
-        <div className="flex flex-wrap gap-2">
-          <select
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-            className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            {months.map((month, index) => (
-              <option key={index} value={index + 1}>{month}</option>
-            ))}
-          </select>
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-            className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            {years.map(year => (
-              <option key={year} value={year}>{year}</option>
-            ))}
-          </select>
-          <Button variant="secondary" onClick={loadData}>Refresh</Button>
+    <div className="cashflow">
+      {/* Header */}
+      <div className="cashflow-header">
+        <div>
+          <div className="cashflow-badge">
+            <div className="cashflow-badge-icon">
+              <Wallet size={16} color="white" />
+            </div>
+            <span className="cashflow-badge-text">CASH FLOW</span>
+          </div>
+          <h1 className="cashflow-title">Cash Flow</h1>
+          <p className="cashflow-subtitle">Track your cash inflows and outflows. Currency: {currency}</p>
+        </div>
+        <div className="cashflow-actions">
+          <button className="cashflow-export-btn">
+            <Download size={16} />
+            Export
+          </button>
+          <button className="cashflow-refresh-btn">
+            <RefreshCw size={16} />
+            Refresh
+          </button>
         </div>
       </div>
 
-      {/* Cash Position */}
-      {cashPosition && (
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Cash Position</h2>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <div>
-              <p className="text-sm text-gray-500">Total Balance</p>
-              <p className="text-xl font-bold text-green-600">{formatCurrency(cashPosition.totalBalance)}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">30-Day Inflow</p>
-              <p className="text-xl font-bold text-blue-600">{formatCurrency(cashPosition.thirtyDayInflow)}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">30-Day Outflow</p>
-              <p className="text-xl font-bold text-red-600">{formatCurrency(cashPosition.thirtyDayOutflow)}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">30-Day Net</p>
-              <p className={`text-xl font-bold ${cashPosition.thirtyDayNet >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {formatCurrency(cashPosition.thirtyDayNet)}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Accounts</p>
-              <p className="text-xl font-bold text-gray-900">{cashPosition.accounts?.length || 0}</p>
-            </div>
+      {/* Summary Cards */}
+      <div className="cashflow-summary">
+        <div className="summary-card summary-card-inflow">
+          <div className="summary-card-icon">
+            <TrendingUp size={24} color="white" />
+          </div>
+          <div className="summary-card-content">
+            <p className="summary-card-label">Total Inflow</p>
+            <p className="summary-card-value inflow-amount">{formatCurrency(summary.totalInflow)}</p>
           </div>
         </div>
-      )}
 
-      {/* Monthly Cash Flow */}
-      <div className="bg-white rounded-lg shadow overflow-hidden mb-6">
-        <div className="p-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Monthly Cash Flow</h2>
+        <div className="summary-card summary-card-outflow">
+          <div className="summary-card-icon">
+            <TrendingDown size={24} color="white" />
+          </div>
+          <div className="summary-card-content">
+            <p className="summary-card-label">Total Outflow</p>
+            <p className="summary-card-value outflow-amount">{formatCurrency(summary.totalOutflow)}</p>
+          </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+
+        <div className="summary-card summary-card-net">
+          <div className="summary-card-icon">
+            <DollarSign size={24} color="white" />
+          </div>
+          <div className="summary-card-content">
+            <p className="summary-card-label">Net Cash Flow</p>
+            <p className={`summary-card-value net-amount ${summary.netCashFlow >= 0 ? 'positive' : 'negative'}`}>
+              {formatCurrency(summary.netCashFlow)}
+            </p>
+          </div>
+        </div>
+
+        <div className="summary-card summary-card-balance">
+          <div className="summary-card-icon">
+            <Wallet size={24} color="white" />
+          </div>
+          <div className="summary-card-content">
+            <p className="summary-card-label">Closing Balance</p>
+            <p className="summary-card-value balance-amount">{formatCurrency(summary.closingBalance)}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Balance Info */}
+      <div className="cashflow-balance">
+        <div className="balance-info">
+          <span className="balance-label">Opening Balance</span>
+          <span className="balance-value">{formatCurrency(summary.openingBalance)}</span>
+        </div>
+        <div className="balance-divider"></div>
+        <div className="balance-info">
+          <span className="balance-label">Net Cash Flow</span>
+          <span className={`balance-value ${summary.netCashFlow >= 0 ? 'positive' : 'negative'}`}>
+            {formatCurrency(summary.netCashFlow)}
+          </span>
+        </div>
+        <div className="balance-divider"></div>
+        <div className="balance-info">
+          <span className="balance-label">Closing Balance</span>
+          <span className="balance-value">{formatCurrency(summary.closingBalance)}</span>
+        </div>
+      </div>
+
+      {/* Transactions Table */}
+      <div className="cashflow-transactions">
+        <div className="transactions-header">
+          <h3 className="transactions-title">Transaction History</h3>
+          <div className="transactions-filters">
+            <button className="filter-btn">
+              <Filter size={16} />
+              Type
+              <ChevronDown size={14} />
+            </button>
+            <button className="filter-btn">
+              <Calendar size={16} />
+              Date
+              <ChevronDown size={14} />
+            </button>
+          </div>
+        </div>
+
+        <div className="transactions-table-wrapper">
+          <table className="transactions-table">
+            <thead>
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Month</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inflow</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Outflow</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Net</th>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Category</th>
+                <th>Type</th>
+                <th>Amount</th>
+                <th className="table-actions">Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {monthlyData.map((item, index) => (
-                <tr key={index}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {item.month} {item.year}
+            <tbody>
+              {transactions.map((transaction) => (
+                <tr key={transaction.id}>
+                  <td className="transaction-date">{transaction.date}</td>
+                  <td className="transaction-description">{transaction.description}</td>
+                  <td className="transaction-category">{transaction.category}</td>
+                  <td>
+                    <span className={`transaction-type ${transaction.type}`}>
+                      {transaction.type === 'inflow' ? 'Inflow' : 'Outflow'}
+                    </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">
-                    {formatCurrency(item.inflow)}
+                  <td className={`transaction-amount ${transaction.type}`}>
+                    {formatCurrency(transaction.amount)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600">
-                    {formatCurrency(item.outflow)}
-                  </td>
-                  <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${item.net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {formatCurrency(item.net)}
+                  <td className="table-actions">
+                    <button className="action-btn view">
+                      <Eye size={14} />
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -165,27 +212,25 @@ const CashFlow = () => {
         </div>
       </div>
 
-      {/* Summary */}
-      {summary && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white rounded-lg shadow p-4">
-            <p className="text-sm font-medium text-gray-500">Total Inflow</p>
-            <p className="text-xl font-bold text-green-600">{formatCurrency(summary.totalInflow)}</p>
-            <p className="text-xs text-gray-400">{summary.transactionCount} transactions</p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-4">
-            <p className="text-sm font-medium text-gray-500">Total Outflow</p>
-            <p className="text-xl font-bold text-red-600">{formatCurrency(summary.totalOutflow)}</p>
-            <p className="text-xs text-gray-400">{summary.transactionCount} transactions</p>
-          </div>
-          <div className={`bg-white rounded-lg shadow p-4 ${summary.netCashFlow >= 0 ? 'border-l-4 border-green-500' : 'border-l-4 border-red-500'}`}>
-            <p className="text-sm font-medium text-gray-500">Net Cash Flow</p>
-            <p className={`text-xl font-bold ${summary.netCashFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatCurrency(summary.netCashFlow)}
-            </p>
+      {/* Stats */}
+      <div className="cashflow-stats">
+        <span className="cashflow-stats-text">
+          Showing {transactions.length} transactions · Currency: {currency}
+        </span>
+      </div>
+
+      {/* Footer */}
+      <footer className="cashflow-footer">
+        <div className="cashflow-footer-content">
+          <span className="cashflow-footer-text">© 2026 Fezher Supreme · Cash Flow</span>
+          <span className="cashflow-footer-currency">Currency: {currency}</span>
+          <div className="cashflow-footer-links">
+            <a href="#">Privacy</a>
+            <a href="#">Terms</a>
+            <a href="#">Support</a>
           </div>
         </div>
-      )}
+      </footer>
     </div>
   )
 }

@@ -1,58 +1,183 @@
- import React from 'react'
+import React from 'react'
 import { NavLink } from 'react-router-dom'
 import { cn } from '../../utils/helpers'
 import { useAuth } from '../../context/AuthContext'
 
-const Sidebar = () => {
+const Sidebar = ({ onClose }) => {
   const { isAdmin } = useAuth()
 
-  const links = [
-    { to: '/', label: 'Dashboard', icon: '📊', className: 'dashboard-link' },
-    { to: '/analytics', label: 'Analytics', icon: '📈', className: 'analytics-link' },
-    { to: '/profit-loss', label: 'Profit/Loss', icon: '📊', className: 'profit-loss-link' },
-    { to: '/cash-flow', label: 'Cash Flow', icon: '💵', className: 'cash-flow-link' },
-    { to: '/budget', label: 'Budget', icon: '💰', className: 'budget-link' },
-    { to: '/bank-reconciliation', label: 'Bank Reconciliation', icon: '🏦', className: 'bank-reconciliation-link' },
-    { to: '/inventory', label: 'Inventory', icon: '📦', className: 'inventory-link' },
-    { to: '/products', label: 'Products', icon: '🏷️', className: 'products-link' },
-    { to: '/sales', label: 'Sales', icon: '💰', className: 'sales-link' },
-    { to: '/expenses', label: 'Expenses', icon: '💳', className: 'expenses-link' },
-    { to: '/customers', label: 'Customers', icon: '👤', className: 'customers-link' },
-    { to: '/email-reports', label: 'Email Reports', icon: '📧', className: 'email-reports-link' },
+  const sections = [
+    {
+      title: 'Overview',
+      links: [
+        { to: '/', label: 'Dashboard', icon: '📊', end: true },
+        { to: '/analytics', label: 'Analytics', icon: '📈' },
+      ],
+    },
+    {
+      title: 'Finance',
+      links: [
+        { to: '/profit-loss', label: 'Profit & Loss', icon: '📊' },
+        { to: '/cash-flow', label: 'Cash Flow', icon: '💵' },
+        { to: '/budget', label: 'Budget', icon: '💰' },
+        {
+          to: '/bank-reconciliation',
+          label: 'Bank Reconciliation',
+          icon: '🏦',
+        },
+      ],
+    },
+    {
+      title: 'Sales',
+      links: [
+        { to: '/sales', label: 'Sales', icon: '🛒' },
+        { to: '/customers', label: 'Customers', icon: '👤' },
+        { to: '/expenses', label: 'Expenses', icon: '💳' },
+      ],
+    },
+    {
+      title: 'Inventory',
+      links: [
+        { to: '/inventory', label: 'Inventory', icon: '📦' },
+        { to: '/products', label: 'Products', icon: '🏷️' },
+      ],
+    },
+    {
+      title: 'Reporting',
+      links: [
+        {
+          to: '/email-reports',
+          label: 'Email Reports',
+          icon: '📧',
+        },
+      ],
+    },
   ]
 
-  // Only show Users link for admins
-  if (isAdmin) {
-    links.push({ to: '/users', label: 'Users', icon: '👥', className: 'users-link' })
-  }
-
   return (
-    <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
-      <div className="p-6 border-b border-gray-200">
-        <h1 className="text-2xl font-bold text-blue-600">BizFlow</h1>
-        <p className="text-sm text-gray-500">Management Dashboard</p>
+    <aside className="flex h-full w-64 flex-col border-r border-slate-800 bg-slate-950 text-white">
+
+      {/* BRAND */}
+      <div className="border-b border-slate-800 px-5 py-5">
+        <div className="flex items-center justify-between">
+
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-lg shadow-lg">
+              📊
+            </div>
+
+            <div>
+              <h1 className="text-lg font-bold tracking-tight text-white">
+                Fezher Supreme
+              </h1>
+
+              <p className="text-xs text-slate-400">
+                Management Dashboard
+              </p>
+            </div>
+          </div>
+
+          {/* MOBILE CLOSE */}
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-800 hover:text-white md:hidden"
+              aria-label="Close navigation"
+            >
+              ✕
+            </button>
+          )}
+
+        </div>
       </div>
-      <nav className="flex-1 p-4 space-y-1">
-        {links.map((link) => (
-          <NavLink
-            key={link.to}
-            to={link.to}
-            className={({ isActive }) =>
-              cn(
-                link.className,
-                'flex items-center gap-3 px-4 py-2.5 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors',
-                isActive && 'bg-blue-50 text-blue-600 font-medium'
-              )
-            }
-          >
-            <span className="text-lg">{link.icon}</span>
-            {link.label}
-          </NavLink>
+
+      {/* NAVIGATION */}
+      <nav className="flex-1 overflow-y-auto px-3 py-4">
+
+        {sections.map((section) => (
+          <div key={section.title} className="mb-6">
+
+            {/* SECTION TITLE */}
+            <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-500">
+              {section.title}
+            </p>
+
+            {/* LINKS */}
+            <div className="space-y-1">
+
+              {section.links.map((link) => (
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  end={link.end}
+                  onClick={onClose}
+                  className={({ isActive }) =>
+                    cn(
+                      'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                      isActive
+                        ? 'bg-blue-600 text-white shadow-md shadow-blue-950/30'
+                        : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                    )
+                  }
+                >
+                  <span className="flex w-6 items-center justify-center text-base">
+                    {link.icon}
+                  </span>
+
+                  <span className="truncate">
+                    {link.label}
+                  </span>
+                </NavLink>
+              ))}
+
+            </div>
+          </div>
         ))}
+
+        {/* ADMINISTRATION */}
+        {isAdmin && (
+          <div className="mb-6">
+
+            <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-500">
+              Administration
+            </p>
+
+            <NavLink
+              to="/users"
+              onClick={onClose}
+              className={({ isActive }) =>
+                cn(
+                  'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                  isActive
+                    ? 'bg-blue-600 text-white shadow-md shadow-blue-950/30'
+                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                )
+              }
+            >
+              <span className="flex w-6 items-center justify-center text-base">
+                👥
+              </span>
+
+              <span>Users</span>
+            </NavLink>
+
+          </div>
+        )}
+
       </nav>
-      <div className="p-4 border-t border-gray-200">
-        <div className="text-xs text-gray-400">BizFlow v1.0</div>
+
+      {/* FOOTER */}
+      <div className="border-t border-slate-800 p-4">
+        <p className="text-xs font-medium text-slate-500">
+          Fezher Supreme
+        </p>
+
+        <p className="mt-1 text-[11px] text-slate-600">
+          Management Dashboard • v1.0
+        </p>
       </div>
+
     </aside>
   )
 }

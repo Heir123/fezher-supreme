@@ -1,0 +1,40 @@
+.realtime-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.realtime-indicator.connected {
+  background: #ecfdf5;
+  color: #065f46;
+}
+
+.realtime-indicator.disconnected {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.realtime-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.realtime-indicator.connected .realtime-dot {
+  background: #10b981;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.realtime-indicator.disconnected .realtime-dot {
+  background: #ef4444;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}

@@ -1,239 +1,323 @@
-import { Link } from "react-router-dom";
+```jsx
+import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
-  Building2,
+  BarChart3,
+  TrendingUp,
+  Wallet,
+  PiggyBank,
+  Landmark,
+  ShoppingCart,
+  Users,
   Package,
   Tags,
-  Users,
   Truck,
-  ShoppingCart,
   ArrowLeftRight,
-  DollarSign,
   Briefcase,
-  Wallet,
-  BarChart3,
+  UserRound,
+  Building2,
   FileText,
+  Mail,
+  Settings,
+  CircleHelp,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
+import { useState } from "react";
 
 export default function Sidebar() {
+  const [openSections, setOpenSections] = useState({
+    finance: true,
+    sales: true,
+    inventory: true,
+    crm: false,
+    hr: false,
+    reporting: true,
+    administration: true,
+  });
+
+  const toggleSection = (section) => {
+    setOpenSections((prev) => ({
+      ...prev,
+      [section]: !prev[section],
+    }));
+  };
+
+  const navClass = ({ isActive }) =>
+    `group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+      isActive
+        ? "bg-slate-700 text-white shadow-sm"
+        : "text-slate-300 hover:bg-slate-800 hover:text-white"
+    }`;
+
+  const subNavClass = ({ isActive }) =>
+    `group flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-200 ${
+      isActive
+        ? "bg-slate-700/70 text-white"
+        : "text-slate-400 hover:bg-slate-800 hover:text-white"
+    }`;
+
+  const Section = ({ id, title, children }) => (
+    <div className="mt-6">
+      <button
+        type="button"
+        onClick={() => toggleSection(id)}
+        className="mb-2 flex w-full items-center justify-between px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500 hover:text-slate-300"
+      >
+        <span>{title}</span>
+
+        {openSections[id] ? (
+          <ChevronDown size={14} />
+        ) : (
+          <ChevronRight size={14} />
+        )}
+      </button>
+
+      {openSections[id] && (
+        <div className="space-y-1">{children}</div>
+      )}
+    </div>
+  );
+
   return (
-    <aside className="w-64 min-h-screen bg-slate-900 text-white p-5">
+    <aside className="flex min-h-screen w-64 flex-col border-r border-slate-800 bg-slate-900 text-white">
 
-      <h1 className="text-2xl font-bold mb-8">
-        Fezher Supreme
-      </h1>
+      {/* BRAND */}
+      <div className="border-b border-slate-800 px-5 py-5">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-700">
+            <BarChart3 size={21} />
+          </div>
 
-      <nav className="space-y-2">
+          <div>
+            <h1 className="text-lg font-bold tracking-tight">
+              Fezher Supreme
+            </h1>
 
-        {/* Dashboard */}
-        <Link
-          to="/dashboard"
-          className="flex items-center gap-3 p-3 rounded hover:bg-slate-700"
-        >
-          <LayoutDashboard size={20} />
-          Dashboard
-        </Link>
+            <p className="text-xs text-slate-400">
+              Management Dashboard
+            </p>
+          </div>
+        </div>
+      </div>
 
-        {/* Companies */}
-        <Link
-          to="/companies"
-          className="flex items-center gap-3 p-3 rounded hover:bg-slate-700"
-        >
-          <Building2 size={20} />
-          Companies
-        </Link>
+      {/* NAVIGATION */}
+      <nav className="flex-1 overflow-y-auto px-3 py-3">
 
-        {/* Products */}
-        <Link
-          to="/products"
-          className="flex items-center gap-3 p-3 rounded hover:bg-slate-700"
-        >
-          <Package size={20} />
-          Products
-        </Link>
+        {/* OVERVIEW */}
+        <div>
+          <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+            Overview
+          </p>
 
-        {/* Inventory Dashboard */}
-        <Link
-          to="/inventory-dashboard"
-          className="flex items-center gap-3 p-3 rounded hover:bg-slate-700"
-        >
-          <Package size={20} />
-          Inventory Dashboard
-        </Link>
+          <div className="space-y-1">
+            <NavLink to="/dashboard" className={navClass}>
+              <LayoutDashboard size={18} />
+              <span>Dashboard</span>
+            </NavLink>
 
-        {/* Categories */}
-        <Link
-          to="/categories"
-          className="flex items-center gap-3 p-3 rounded hover:bg-slate-700"
-        >
-          <Tags size={20} />
-          Categories
-        </Link>
+            <NavLink to="/analytics" className={navClass}>
+              <TrendingUp size={18} />
+              <span>Analytics</span>
+            </NavLink>
+          </div>
+        </div>
 
-        {/* Customers */}
-        <Link
-          to="/customers"
-          className="flex items-center gap-3 p-3 rounded hover:bg-slate-700"
-        >
-          <Users size={20} />
-          Customers
-        </Link>
+        {/* FINANCE */}
+        <Section id="finance" title="Finance">
+          <NavLink to="/profit-loss" className={navClass}>
+            <BarChart3 size={18} />
+            <span>Profit & Loss</span>
+          </NavLink>
 
-        {/* Suppliers */}
-        <Link
-          to="/suppliers"
-          className="flex items-center gap-3 p-3 rounded hover:bg-slate-700"
-        >
-          <Truck size={20} />
-          Suppliers
-        </Link>
+          <NavLink to="/cash-flow" className={navClass}>
+            <Wallet size={18} />
+            <span>Cash Flow</span>
+          </NavLink>
 
-        {/* Purchases */}
-        <Link
-          to="/purchases"
-          className="flex items-center gap-3 p-3 rounded hover:bg-slate-700"
-        >
-          <ShoppingCart size={20} />
-          Purchases
-        </Link>
+          <NavLink to="/budget" className={navClass}>
+            <PiggyBank size={18} />
+            <span>Budget</span>
+          </NavLink>
 
-        {/* Sales */}
-        <Link
-          to="/sales"
-          className="flex items-center gap-3 p-3 rounded hover:bg-slate-700"
-        >
-          <ShoppingCart size={20} />
-          Sales
-        </Link>
+          <NavLink to="/bank-reconciliation" className={navClass}>
+            <Landmark size={18} />
+            <span>Bank Reconciliation</span>
+          </NavLink>
 
-        {/* Finance */}
-        <Link
-          to="/finance"
-          className="flex items-center gap-3 p-3 rounded hover:bg-slate-700"
-        >
-          <DollarSign size={20} />
-          Finance
-        </Link>
+          {/* Existing Finance */}
+          <NavLink to="/finance" className={subNavClass}>
+            <Wallet size={17} />
+            <span>Finance Dashboard</span>
+          </NavLink>
 
-        {/* Finance Transactions */}
-        <Link
-          to="/finance/transactions"
-          className="flex items-center gap-3 pl-10 p-2 rounded hover:bg-slate-700 text-sm"
-        >
-          <Wallet size={18} />
-          Transactions
-        </Link>
+          <NavLink to="/finance/transactions" className={subNavClass}>
+            <ArrowLeftRight size={17} />
+            <span>Transactions</span>
+          </NavLink>
+        </Section>
+
+        {/* SALES */}
+        <Section id="sales" title="Sales">
+          <NavLink to="/sales" className={navClass}>
+            <ShoppingCart size={18} />
+            <span>Sales</span>
+          </NavLink>
+
+          <NavLink to="/customers" className={navClass}>
+            <Users size={18} />
+            <span>Customers</span>
+          </NavLink>
+
+          {/* Existing Purchasing */}
+          <NavLink to="/purchases" className={subNavClass}>
+            <ShoppingCart size={17} />
+            <span>Purchases</span>
+          </NavLink>
+
+          <NavLink to="/suppliers" className={subNavClass}>
+            <Truck size={17} />
+            <span>Suppliers</span>
+          </NavLink>
+        </Section>
+
+        {/* INVENTORY */}
+        <Section id="inventory" title="Inventory">
+          <NavLink to="/inventory" className={navClass}>
+            <Package size={18} />
+            <span>Inventory</span>
+          </NavLink>
+
+          <NavLink to="/products" className={navClass}>
+            <Tags size={18} />
+            <span>Products</span>
+          </NavLink>
+
+          <NavLink to="/categories" className={subNavClass}>
+            <Tags size={17} />
+            <span>Categories</span>
+          </NavLink>
+
+          <NavLink to="/inventory-dashboard" className={subNavClass}>
+            <Package size={17} />
+            <span>Inventory Dashboard</span>
+          </NavLink>
+
+          <NavLink to="/inventory-movements" className={subNavClass}>
+            <ArrowLeftRight size={17} />
+            <span>Stock Movements</span>
+          </NavLink>
+        </Section>
 
         {/* CRM */}
-        <Link
-          to="/crm"
-          className="flex items-center gap-3 p-3 rounded hover:bg-slate-700"
-        >
-          <Briefcase size={20} />
-          CRM
-        </Link>
+        <Section id="crm" title="CRM">
+          <NavLink to="/crm" className={navClass}>
+            <Briefcase size={18} />
+            <span>CRM Dashboard</span>
+          </NavLink>
 
-        {/* CRM Leads */}
-        <Link
-          to="/crm/leads"
-          className="flex items-center gap-3 pl-10 p-2 rounded hover:bg-slate-700 text-sm"
-        >
-          Leads
-        </Link>
+          <NavLink to="/crm/leads" className={subNavClass}>
+            <UserRound size={17} />
+            <span>Leads</span>
+          </NavLink>
 
-        {/* CRM Opportunities */}
-        <Link
-          to="/crm/opportunities"
-          className="flex items-center gap-3 pl-10 p-2 rounded hover:bg-slate-700 text-sm"
-        >
-          Opportunities
-        </Link>
+          <NavLink to="/crm/opportunities" className={subNavClass}>
+            <TrendingUp size={17} />
+            <span>Opportunities</span>
+          </NavLink>
 
-        {/* CRM Follow-ups */}
-        <Link
-          to="/crm/follow-ups"
-          className="flex items-center gap-3 p-3 rounded hover:bg-slate-700"
-        >
-          Follow-ups
-        </Link>
-
-        {/* Inventory Movements */}
-        <Link
-          to="/inventory-movements"
-          className="flex items-center gap-3 p-3 rounded hover:bg-slate-700"
-        >
-          <ArrowLeftRight size={20} />
-          Inventory Movements
-        </Link>
+          <NavLink to="/crm/follow-ups" className={subNavClass}>
+            <Users size={17} />
+            <span>Follow-ups</span>
+          </NavLink>
+        </Section>
 
         {/* HR */}
-        <Link
-          to="/hr"
-          className="flex items-center gap-3 p-3 rounded hover:bg-slate-700"
-        >
-          <Users size={20} />
-          HR
-        </Link>
+        <Section id="hr" title="Human Resources">
+          <NavLink to="/hr" className={navClass}>
+            <Users size={18} />
+            <span>HR Dashboard</span>
+          </NavLink>
 
-        {/* Employees */}
-        <Link
-          to="/hr/employees"
-          className="flex items-center gap-3 pl-10 p-2 rounded hover:bg-slate-700 text-sm"
-        >
-          Employees
-        </Link>
+          <NavLink to="/hr/employees" className={subNavClass}>
+            <UserRound size={17} />
+            <span>Employees</span>
+          </NavLink>
 
-        {/* Departments */}
-        <Link
-          to="/departments"
-          className="flex items-center gap-3 pl-10 p-2 rounded hover:bg-slate-700 text-sm"
-        >
-          Departments
-        </Link>
+          <NavLink to="/departments" className={subNavClass}>
+            <Building2 size={17} />
+            <span>Departments</span>
+          </NavLink>
 
-        {/* Positions */}
-        <Link
-          to="/positions"
-          className="flex items-center gap-3 pl-10 p-2 rounded hover:bg-slate-700 text-sm"
-        >
-          Positions
-        </Link>
+          <NavLink to="/positions" className={subNavClass}>
+            <Briefcase size={17} />
+            <span>Positions</span>
+          </NavLink>
 
-        {/* Attendance */}
-        <Link
-          to="/attendance"
-          className="flex items-center gap-3 pl-10 p-2 rounded hover:bg-slate-700 text-sm"
-        >
-          Attendance
-        </Link>
+          <NavLink to="/attendance" className={subNavClass}>
+            <Users size={17} />
+            <span>Attendance</span>
+          </NavLink>
 
-        {/* Payroll */}
-        <Link
-          to="/payroll"
-          className="flex items-center gap-3 pl-10 p-2 rounded hover:bg-slate-700 text-sm"
-        >
-          Payroll
-        </Link>
+          <NavLink to="/payroll" className={subNavClass}>
+            <Wallet size={17} />
+            <span>Payroll</span>
+          </NavLink>
+        </Section>
 
-        {/* Executive */}
-        <Link
-          to="/executive"
-          className="flex items-center gap-3 p-3 rounded hover:bg-slate-700"
-        >
-          <BarChart3 size={20} />
-          Executive
-        </Link>
+        {/* REPORTING */}
+        <Section id="reporting" title="Reporting">
+          <NavLink to="/reports" className={navClass}>
+            <FileText size={18} />
+            <span>Reports</span>
+          </NavLink>
 
-        {/* Reports */}
-        <Link
-          to="/reports"
-          className="flex items-center gap-3 p-3 rounded hover:bg-slate-700"
-        >
-          <FileText size={20} />
-          Reports
-        </Link>
+          <NavLink to="/email-reports" className={navClass}>
+            <Mail size={18} />
+            <span>Email Reports</span>
+          </NavLink>
 
+          <NavLink to="/executive" className={subNavClass}>
+            <BarChart3 size={17} />
+            <span>Executive Dashboard</span>
+          </NavLink>
+        </Section>
+
+        {/* ADMINISTRATION */}
+        <Section id="administration" title="Administration">
+          <NavLink to="/companies" className={navClass}>
+            <Building2 size={18} />
+            <span>Companies</span>
+          </NavLink>
+
+          <NavLink to="/users" className={navClass}>
+            <Users size={18} />
+            <span>Users</span>
+          </NavLink>
+        </Section>
       </nav>
+
+      {/* BOTTOM NAVIGATION */}
+      <div className="border-t border-slate-800 p-3">
+        <div className="space-y-1">
+          <NavLink to="/settings" className={navClass}>
+            <Settings size={18} />
+            <span>Settings</span>
+          </NavLink>
+
+          <NavLink to="/help" className={navClass}>
+            <CircleHelp size={18} />
+            <span>Help & Support</span>
+          </NavLink>
+        </div>
+
+        <div className="mt-3 px-3 pb-1">
+          <p className="text-[11px] text-slate-600">
+            Fezher Supreme v1.0
+          </p>
+        </div>
+      </div>
     </aside>
   );
 }
+```

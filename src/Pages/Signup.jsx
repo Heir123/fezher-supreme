@@ -1,75 +1,239 @@
-import { useState } from "react";
-import { supabase } from "../services/supabase";
+ import React, { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import './Signup.css'
 
 function Signup() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const navigate = useNavigate()
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState(false)
+  const [formData, setFormData] = useState({
+    orgName: '',
+    orgSlug: '',
+    adminName: '',
+    adminEmail: '',
+    adminPassword: '',
+    confirmPassword: ''
+  })
 
-  async function handleSignup() {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: name,
-        },
-      },
-    });
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    setSuccess(false)
 
-    if (error) {
-      alert(error.message);
-    } else {
-      alert("Account created successfully! Check your email to verify your account.");
+    if (!formData.orgName.trim()) {
+      setError('Organization name is required')
+      setLoading(false)
+      return
+    }
+
+    if (!formData.orgSlug.trim()) {
+      setError('Organization slug is required')
+      setLoading(false)
+      return
+    }
+
+    if (!formData.adminName.trim()) {
+      setError('Your name is required')
+      setLoading(false)
+      return
+    }
+
+    if (!formData.adminEmail.trim()) {
+      setError('Email is required')
+      setLoading(false)
+      return
+    }
+
+    if (formData.adminPassword.length < 6) {
+      setError('Password must be at least 6 characters')
+      setLoading(false)
+      return
+    }
+
+    if (formData.adminPassword !== formData.confirmPassword) {
+      setError('Passwords do not match')
+      setLoading(false)
+      return
+    }
+
+    try {
+      const payload = {
+        orgName: formData.orgName,
+        orgSlug: formData.orgSlug.toLowerCase().replace(/\s/g, '-'),
+        adminName: formData.adminName,
+        adminEmail: formData.adminEmail,
+        adminPassword: formData.adminPassword
+      }
+
+      const response = await fetch('http://localhost:3000/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+
+      const data = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Signup failed')
+      }
+
+      localStorage.setItem('authToken', data.token)
+      localStorage.setItem('userData', JSON.stringify(data.user))
+      localStorage.setItem('organizationData', JSON.stringify(data.organization))
+      
+      setSuccess(true)
+      setLoading(false)
+      
+      setTimeout(() => {
+        navigate('/dashboard')
+      }, 1500)
+      
+    } catch (err) {
+      setError(err.message || 'An error occurred. Please try again.')
+      setLoading(false)
     }
   }
 
   return (
-    <div style={{ padding: "50px", textAlign: "center" }}>
-      <h1>Create Account</h1>
+    <div className="signup-container">
+      <div className="signup-card">
+        {/* Brand */}
+        <div className="signup-brand">
+          <div className="signup-brand-icon">◆</div>
+          <span className="signup-brand-name">
+            Fezher <span className="signup-brand-highlight">Supreme</span>
+          </span>
+        </div>
 
-      <input
-        type="text"
-        placeholder="Full Name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        style={{ padding: "12px", width: "300px", margin: "10px" }}
-      />
+        {/* Header */}
+        <div className="signup-header">
+          <h1>Create Your Organization</h1>
+          <p>Start your free trial today</p>
+        </div>
 
-      <br />
+        {/* Success Message */}
+        {success && (
+          <div className="signup-success">
+            <span>✅</span> Organization created successfully! Redirecting...
+          </div>
+        )}
 
-      <input
-        type="email"
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        style={{ padding: "12px", width: "300px", margin: "10px" }}
-      />
+        {/* Error Message */}
+        {error && (
+          <div className="signup-error">
+            <span>⚠️</span> {error}
+          </div>
+        )}
 
-      <br />
+        {/* Form */}
+        <form onSubmit={handleSubmit}>
+          <div className="signup-form-group">
+            <label>Organization Name</label>
+            <input
+              type="text"
+              className="signup-input"
+              value={formData.orgName}
+              onChange={(e) => setFormData({...formData, orgName: e.target.value})}
+              placeholder="Acme Inc."
+              required
+            />
+          </div>
 
-      <input
-        type="password"
-        placeholder="Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        style={{ padding: "12px", width: "300px", margin: "10px" }}
-      />
+          <div className="signup-form-group">
+            <label>Organization Slug</label>
+            <div className="signup-slug-wrapper">
+              <span className="signup-slug-prefix">https://app.fezher.com/</span>
+              <input
+                type="text"
+                className="signup-slug-input"
+                value={formData.orgSlug}
+                onChange={(e) => setFormData({...formData, orgSlug: e.target.value.toLowerCase().replace(/\s/g, '-')})}
+                placeholder="acme-inc"
+                required
+              />
+            </div>
+            <small className="signup-hint">This will be your unique URL</small>
+          </div>
 
-      <br />
+          <div className="signup-row">
+            <div className="signup-form-group">
+              <label>Your Name</label>
+              <input
+                type="text"
+                className="signup-input"
+                value={formData.adminName}
+                onChange={(e) => setFormData({...formData, adminName: e.target.value})}
+                placeholder="John Doe"
+                required
+              />
+            </div>
 
-      <button
-        onClick={handleSignup}
-        style={{
-          padding: "12px 30px",
-          marginTop: "20px",
-          cursor: "pointer",
-        }}
-      >
-        Sign Up
-      </button>
+            <div className="signup-form-group">
+              <label>Email</label>
+              <input
+                type="email"
+                className="signup-input"
+                value={formData.adminEmail}
+                onChange={(e) => setFormData({...formData, adminEmail: e.target.value})}
+                placeholder="you@example.com"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="signup-row">
+            <div className="signup-form-group">
+              <label>Password</label>
+              <input
+                type="password"
+                className="signup-input"
+                value={formData.adminPassword}
+                onChange={(e) => setFormData({...formData, adminPassword: e.target.value})}
+                placeholder="••••••••"
+                required
+                minLength="6"
+              />
+            </div>
+
+            <div className="signup-form-group">
+              <label>Confirm Password</label>
+              <input
+                type="password"
+                className="signup-input"
+                value={formData.confirmPassword}
+                onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
+                placeholder="••••••••"
+                required
+                minLength="6"
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            className="signup-submit-btn"
+            disabled={loading || success}
+          >
+            {loading ? 'Creating...' : success ? '✓ Created!' : 'Create Organization →'}
+          </button>
+        </form>
+
+        <div className="signup-footer">
+          <p>
+            Already have an account? <Link to="/login">Sign in</Link>
+          </p>
+        </div>
+
+        <div className="signup-features">
+          <span>🔒 Secure & encrypted</span>
+          <span>⚡ Fast setup</span>
+          <span>✅ Free to start</span>
+        </div>
+      </div>
     </div>
-  );
+  )
 }
 
-export default Signup;
+export default Signup

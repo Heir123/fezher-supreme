@@ -1,22 +1,26 @@
-import { Card, CardContent } from "@/components/ui/card";
+import React from 'react'
+import Button from './Button'
 
-export default function EmptyState({
-  title = "No Data Found",
-  description = "There is nothing to display yet.",
-}) {
+const EmptyState = ({ 
+  title = 'No data found', 
+  description = 'Add your first item to get started.',
+  icon = '📭',
+  actionText = '',
+  onAction = null,
+  actionVariant = 'primary'
+}) => {
   return (
-    <Card className="border-dashed">
-      <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-        <div className="text-5xl mb-4">📦</div>
-
-        <h2 className="text-xl font-semibold">
-          {title}
-        </h2>
-
-        <p className="text-muted-foreground mt-2 max-w-md">
-          {description}
-        </p>
-      </CardContent>
-    </Card>
-  );
+    <div className="text-center py-12">
+      <div className="text-6xl mb-4">{icon}</div>
+      <h3 className="text-lg font-medium text-gray-900 mb-2">{title}</h3>
+      <p className="text-gray-500 mb-4">{description}</p>
+      {actionText && onAction && (
+        <Button variant={actionVariant} onClick={onAction}>
+          {actionText}
+        </Button>
+      )}
+    </div>
+  )
 }
+
+export default EmptyState

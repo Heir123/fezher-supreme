@@ -1,116 +1,88 @@
- import React, { createContext, useState, useContext, useEffect } from 'react'
-import { authService } from '../services/auth'
-import { userService } from '../services/userService'
-import { supabase } from '../services/supabase'
+import React, { createContext, useState, useContext, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 
-const AuthContext = createContext(null)
+const AuthContext = createContext()
 
-export const AuthProvider = ({ children }) => {
+export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
-  const [userRole, setUserRole] = useState('staff')
+  const [organization, setOrganization] = useState(null)
   const [loading, setLoading] = useState(true)
+  const navigate = useNavigate()
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const { user, error } = await authService.getCurrentUser()
-        if (error) {
-          console.error('Auth check failed:', error)
-        } else if (user) {
-          setUser(user)
-          // Get user role from profiles
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', user.id)
-            .single()
-          setUserRole(profile?.role || 'staff')
+        const token = localStorage.getItem('authToken')
+        const userData = localStorage.getItem('userData')
+        const orgData = localStorage.getItem('organizationData')
+        
+        if (token && userData) {
+          setUser(JSON.parse(userData))
+          if (orgData) {
+            setOrganization(JSON.parse(orgData))
+          }
+        } else {
+          setUser(null)
+          setOrganization(null)
         }
       } catch (error) {
-        console.error('Auth check error:', error)
+        console.log('Auth check: No valid session')
+        setUser(null)
+        setOrganization(null)
       } finally {
         setLoading(false)
       }
     }
 
     checkAuth()
-
-    const { data: subscription } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (session) {
-          setUser(session.user)
-          // Get user role
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', session.user.id)
-            .single()
-          setUserRole(profile?.role || 'staff')
-        } else {
-          setUser(null)
-          setUserRole('staff')
-        }
-        setLoading(false)
-      }
-    )
-
-    return () => {
-      if (subscription && typeof subscription.unsubscribe === 'function') {
-        subscription.unsubscribe()
-      }
-    }
   }, [])
 
-  const login = async (email, password) => {
-    const { user, error } = await authService.signIn(email, password)
-    if (error) throw new Error(error)
-    setUser(user)
-    // Get user role
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-    setUserRole(profile?.role || 'staff')
-    return user
-  }
+  const login = async (email, password, organizationId) => {
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+      
+      const response = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, organizationId })
+      })
 
-  const logout = async () => {
-    await authService.signOut()
-    setUser(null)
-    setUserRole('staff')
-  }
+      const data = await response.json()
+      
+      if (!response.ok) {
+        return { success: false, error: data.error || 'Login failed' }
+      }
 
-  const signup = async (email, password, userData) => {
-    const { user, error } = await authService.signUp(email, password, userData)
-    if (error) throw new Error(error)
-    setUser(user)
-    setUserRole('staff')
-    return user
-  }
-
-  const refreshUserRole = async () => {
-    if (user) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single()
-      setUserRole(profile?.role || 'staff')
+      localStorage.setItem('authToken', data.token)
+      localStorage.setItem('userData', JSON.stringify(data.user))
+      localStorage.setItem('organizationData', JSON.stringify(data.organization))
+      
+      setUser(data.user)
+      setOrganization(data.organization)
+      
+      return { success: true, user: data.user, organization: data.organization }
+    } catch (error) {
+      console.error('Login failed:', error)
+      return { success: false, error: error.message }
     }
+  }
+
+  const logout = () => {
+    localStorage.removeItem('authToken')
+    localStorage.removeItem('userData')
+    localStorage.removeItem('organizationData')
+    setUser(null)
+    setOrganization(null)
+    navigate('/login')
   }
 
   const value = {
     user,
-    userRole,
+    organization,
     loading,
     login,
     logout,
-    signup,
-    refreshUserRole,
-    isAuthenticated: !!user,
-    isAdmin: userRole === 'admin',
-    isManager: userRole === 'admin' || userRole === 'manager',
+    isAuthenticated: !!user
   }
 
   return (
@@ -120,10 +92,12 @@ export const AuthProvider = ({ children }) => {
   )
 }
 
-export const useAuth = () => {
+export function useAuth() {
   const context = useContext(AuthContext)
   if (!context) {
-    throw new Error('useAuth must be used within AuthProvider')
+    throw new Error('useAuth must be used within an AuthProvider')
   }
   return context
 }
+
+export default AuthContext

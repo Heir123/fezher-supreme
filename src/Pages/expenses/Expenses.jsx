@@ -1,420 +1,310 @@
-import React, { useState, useEffect } from 'react'
-import { expensesService } from '../../services/expensesService'
-import { notificationService } from '../../services/notificationService'
-import Button from '../../components/common/Button'
-import { formatCurrency, formatDate } from '../../utils/helpers'
+ import React, { useState, useEffect } from 'react'
+import { 
+  DollarSign,
+  Search,
+  Filter,
+  ChevronDown,
+  Plus,
+  Edit,
+  Trash2,
+  Calendar,
+  Eye,
+  MoreHorizontal,
+  X,
+  Check,
+  AlertCircle
+} from 'lucide-react'
+import { useCurrency } from '../../context/CurrencyContext'
+import './Expenses.css'
 
-const Expenses = () => {
+function Expenses() {
+  const { formatCurrency, currency } = useCurrency()
   const [expenses, setExpenses] = useState([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
-  const [categoryFilter, setCategoryFilter] = useState('all')
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [showModal, setShowModal] = useState(false)
   const [editingExpense, setEditingExpense] = useState(null)
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
+    category: '',
     amount: '',
-    category: 'Utilities',
-    payment_method: 'cash',
-    expense_date: new Date().toISOString().split('T')[0],
-    status: 'paid',
-    notes: ''
+    description: '',
+    expense_date: '',
+    payment_method: ''
   })
-  const [summary, setSummary] = useState({})
 
   useEffect(() => {
-    loadExpenses()
-    loadSummary()
+    setTimeout(() => {
+      setExpenses([
+        { id: 1, category: 'Office Supplies', amount: 150.00, description: 'Printer paper and ink', expense_date: '2026-09-05', payment_method: 'Credit Card' },
+        { id: 2, category: 'Utilities', amount: 250.00, description: 'Electricity bill', expense_date: '2026-09-04', payment_method: 'Bank Transfer' },
+        { id: 3, category: 'Rent', amount: 1200.00, description: 'Monthly office rent', expense_date: '2026-09-01', payment_method: 'Bank Transfer' },
+        { id: 4, category: 'Marketing', amount: 300.00, description: 'Social media ads', expense_date: '2026-08-28', payment_method: 'Credit Card' }
+      ])
+      setLoading(false)
+    }, 1000)
   }, [])
 
-  const loadExpenses = async () => {
-    setLoading(true)
-    setError('')
-    try {
-      const { data, error } = await expensesService.getExpenses()
-      if (error) throw new Error(error)
-      setExpenses(data || [])
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const loadSummary = async () => {
-    try {
-      const { data, error } = await expensesService.getTotalExpenses()
-      if (error) throw new Error(error)
-      setSummary(data || {})
-    } catch (err) {
-      console.error('Failed to load summary:', err)
-    }
-  }
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
-  }
-
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault()
-    try {
-      const expenseData = {
+    if (editingExpense) {
+      setExpenses(expenses.map(p => 
+        p.id === editingExpense.id ? { ...p, ...formData, amount: parseFloat(formData.amount) } : p
+      ))
+    } else {
+      setExpenses([...expenses, {
         ...formData,
+        id: Date.now(),
         amount: parseFloat(formData.amount)
-      }
-      
-      if (editingExpense) {
-        const { data, error } = await expensesService.updateExpense(editingExpense.id, expenseData)
-        if (error) throw new Error(error)
-        notificationService.success('Expense Updated', `${data.title} has been updated`)
-      } else {
-        const { data, error } = await expensesService.createExpense(expenseData)
-        if (error) throw new Error(error)
-        notificationService.success('Expense Added', `${data.title} has been added`)
-      }
-      
-      setIsModalOpen(false)
-      setEditingExpense(null)
-      setFormData({
-        title: '',
-        description: '',
-        amount: '',
-        category: 'Utilities',
-        payment_method: 'cash',
-        expense_date: new Date().toISOString().split('T')[0],
-        status: 'paid',
-        notes: ''
-      })
-      loadExpenses()
-      loadSummary()
-    } catch (err) {
-      notificationService.error('Failed to save expense', err.message)
+      }])
     }
-  }
-
-  const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to delete this expense?')) return
-    try {
-      const { error } = await expensesService.deleteExpense(id)
-      if (error) throw new Error(error)
-      notificationService.success('Expense Deleted', 'Expense has been removed')
-      loadExpenses()
-      loadSummary()
-    } catch (err) {
-      notificationService.error('Failed to delete expense', err.message)
-    }
+    setShowModal(false)
+    setEditingExpense(null)
+    setFormData({ category: '', amount: '', description: '', expense_date: '', payment_method: '' })
   }
 
   const handleEdit = (expense) => {
     setEditingExpense(expense)
     setFormData({
-      title: expense.title || '',
-      description: expense.description || '',
-      amount: expense.amount || '',
-      category: expense.category || 'Utilities',
-      payment_method: expense.payment_method || 'cash',
-      expense_date: expense.expense_date || new Date().toISOString().split('T')[0],
-      status: expense.status || 'paid',
-      notes: expense.notes || ''
+      category: expense.category,
+      amount: expense.amount.toString(),
+      description: expense.description,
+      expense_date: expense.expense_date,
+      payment_method: expense.payment_method
     })
-    setIsModalOpen(true)
+    setShowModal(true)
   }
 
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'paid': return 'text-green-800 bg-green-100'
-      case 'pending': return 'text-yellow-800 bg-yellow-100'
-      case 'cancelled': return 'text-red-800 bg-red-100'
-      default: return 'text-gray-800 bg-gray-100'
+  const handleDelete = (id) => {
+    if (confirm('Are you sure you want to delete this expense?')) {
+      setExpenses(expenses.filter(p => p.id !== id))
     }
   }
 
-  const filteredExpenses = expenses.filter(expense => {
-    const matchSearch = expense.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        expense.description?.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchCategory = categoryFilter === 'all' || expense.category === categoryFilter
-    const matchStatus = statusFilter === 'all' || expense.status === statusFilter
-    return matchSearch && matchCategory && matchStatus
-  })
+  const filteredExpenses = expenses.filter(expense =>
+    expense.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    expense.description.toLowerCase().includes(searchTerm.toLowerCase())
+  )
 
-  const categories = [...new Set(expenses.map(e => e.category))]
+  const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0)
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading expenses...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-        Error loading expenses: {error}
+      <div className="expenses-loading">
+        <div className="expenses-loading-spinner"></div>
+        <p className="expenses-loading-text">Loading expenses...</p>
       </div>
     )
   }
 
   return (
-    <div>
+    <div className="expenses">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">💰 Expenses</h1>
-        <div className="flex flex-wrap gap-2">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search expenses..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full sm:w-48 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10"
-            />
-            <svg className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
+      <div className="expenses-header">
+        <div>
+          <div className="expenses-badge">
+            <div className="expenses-badge-icon">
+              <DollarSign size={16} color="white" />
+            </div>
+            <span className="expenses-badge-text">EXPENSES</span>
           </div>
-          <Button variant="primary" onClick={() => { setEditingExpense(null); setIsModalOpen(true); }}>
-            Add Expense
-          </Button>
+          <h1 className="expenses-title">Expenses</h1>
+          <p className="expenses-subtitle">Track your business expenses. Currency: {currency}</p>
+          <p className="expenses-total">Total Expenses: {formatCurrency(totalExpenses)}</p>
         </div>
+        <button className="expenses-add-btn" onClick={() => { setEditingExpense(null); setFormData({ category: '', amount: '', description: '', expense_date: '', payment_method: '' }); setShowModal(true) }}>
+          <Plus size={16} />
+          Add Expense
+        </button>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-lg shadow p-4">
-          <p className="text-sm font-medium text-gray-500">Total Expenses</p>
-          <p className="text-xl font-bold text-gray-900">{formatCurrency(summary.total || 0)}</p>
+      {/* Summary Stats */}
+      <div className="expenses-summary">
+        <div className="expense-stat">
+          <span className="expense-stat-value">{expenses.length}</span>
+          <span className="expense-stat-label">Total Expenses</span>
         </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <p className="text-sm font-medium text-gray-500">Paid</p>
-          <p className="text-xl font-bold text-green-600">{formatCurrency(summary.paid || 0)}</p>
+        <div className="expense-stat">
+          <span className="expense-stat-value">{formatCurrency(totalExpenses)}</span>
+          <span className="expense-stat-label">Total Amount</span>
         </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <p className="text-sm font-medium text-gray-500">Pending</p>
-          <p className="text-xl font-bold text-yellow-600">{formatCurrency(summary.pending || 0)}</p>
+        <div className="expense-stat">
+          <span className="expense-stat-value">{new Set(expenses.map(e => e.category)).size}</span>
+          <span className="expense-stat-label">Categories</span>
         </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <p className="text-sm font-medium text-gray-500">Total Count</p>
-          <p className="text-xl font-bold text-gray-900">{summary.count || 0}</p>
+        <div className="expense-stat">
+          <span className="expense-stat-value">{formatCurrency(totalExpenses / expenses.length || 0)}</span>
+          <span className="expense-stat-label">Average Expense</span>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-6">
-        <select
-          value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="all">All Categories</option>
-          {categories.map(cat => (
-            <option key={cat} value={cat}>{cat}</option>
-          ))}
-        </select>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="all">All Status</option>
-          <option value="paid">Paid</option>
-          <option value="pending">Pending</option>
-          <option value="cancelled">Cancelled</option>
-        </select>
-        <Button variant="secondary" size="sm" onClick={() => { setCategoryFilter('all'); setStatusFilter('all'); setSearchTerm(''); }}>
-          Clear Filters
-        </Button>
-      </div>
-
-      {/* Expenses Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredExpenses.length === 0 ? (
-                <tr>
-                  <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
-                    No expenses found
-                  </td>
-                </tr>
-              ) : (
-                filteredExpenses.map((expense) => (
-                  <tr key={expense.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {expense.title}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {expense.category}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {formatCurrency(expense.amount)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {formatDate(expense.expense_date)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(expense.status)}`}>
-                        {expense.status || 'paid'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      <div className="flex gap-1">
-                        <Button variant="outline" size="sm" onClick={() => handleEdit(expense)}>Edit</Button>
-                        <Button variant="danger" size="sm" onClick={() => handleDelete(expense.id)}>Delete</Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+      <div className="expenses-filters">
+        <div className="expenses-search">
+          <Search size={18} className="expenses-search-icon" />
+          <input
+            type="text"
+            placeholder="Search expenses..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="expenses-search-input"
+          />
+        </div>
+        <div className="expenses-filter-group">
+          <button className="expenses-filter-btn">
+            <Filter size={16} />
+            Category
+            <ChevronDown size={14} />
+          </button>
+          <button className="expenses-filter-btn">
+            <Filter size={16} />
+            Date
+            <ChevronDown size={14} />
+          </button>
         </div>
       </div>
 
-      {/* Add/Edit Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                {editingExpense ? 'Edit Expense' : 'Add Expense'}
+      {/* Table */}
+      <div className="expenses-table-wrapper">
+        <table className="expenses-table">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>Description</th>
+              <th>Amount</th>
+              <th>Date</th>
+              <th>Payment Method</th>
+              <th className="table-actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredExpenses.map((expense) => (
+              <tr key={expense.id}>
+                <td>
+                  <span className="expense-category">{expense.category}</span>
+                </td>
+                <td className="expense-description">{expense.description}</td>
+                <td className="expense-amount">{formatCurrency(expense.amount)}</td>
+                <td className="expense-date">{expense.expense_date}</td>
+                <td className="expense-payment">{expense.payment_method}</td>
+                <td className="table-actions">
+                  <button className="action-btn edit" onClick={() => handleEdit(expense)}>
+                    <Edit size={14} />
+                  </button>
+                  <button className="action-btn delete" onClick={() => handleDelete(expense.id)}>
+                    <Trash2 size={14} />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Stats */}
+      <div className="expenses-stats">
+        <span className="expenses-stats-text">
+          Showing {filteredExpenses.length} of {expenses.length} expenses · Currency: {currency}
+        </span>
+      </div>
+
+      {/* Modal */}
+      {showModal && (
+        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2 className="modal-title">
+                {editingExpense ? 'Edit Expense' : 'Add New Expense'}
               </h2>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
-                  <input
-                    type="text"
-                    name="title"
-                    value={formData.title}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter expense title"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                  <textarea
-                    name="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    rows="2"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter description"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Amount *</label>
-                  <input
-                    type="number"
-                    name="amount"
-                    value={formData.amount}
-                    onChange={handleInputChange}
-                    required
-                    min="0"
-                    step="0.01"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="0.00"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                  <select
-                    name="category"
-                    value={formData.category}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="Rent">Rent</option>
-                    <option value="Utilities">Utilities</option>
-                    <option value="Salaries">Salaries</option>
-                    <option value="Supplies">Supplies</option>
-                    <option value="Marketing">Marketing</option>
-                    <option value="Travel">Travel</option>
-                    <option value="Meals">Meals</option>
-                    <option value="Maintenance">Maintenance</option>
-                    <option value="Insurance">Insurance</option>
-                    <option value="Tax">Tax</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
-                  <select
-                    name="payment_method"
-                    value={formData.payment_method}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="cash">Cash</option>
-                    <option value="credit_card">Credit Card</option>
-                    <option value="bank_transfer">Bank Transfer</option>
-                    <option value="mobile_money">Mobile Money</option>
-                    <option value="check">Check</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+              <button className="modal-close" onClick={() => setShowModal(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleSubmit} className="modal-form">
+              <div className="form-group">
+                <label className="form-label">Category</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={formData.category}
+                  onChange={(e) => setFormData({...formData, category: e.target.value})}
+                  placeholder="Office Supplies"
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Amount ({currency})</label>
+                <input
+                  type="number"
+                  className="form-input"
+                  value={formData.amount}
+                  onChange={(e) => setFormData({...formData, amount: e.target.value})}
+                  placeholder="0.00"
+                  step="0.01"
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Description</label>
+                <textarea
+                  className="form-textarea"
+                  value={formData.description}
+                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  placeholder="Expense description..."
+                  rows={2}
+                />
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">Date</label>
                   <input
                     type="date"
-                    name="expense_date"
+                    className="form-input"
                     value={formData.expense_date}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onChange={(e) => setFormData({...formData, expense_date: e.target.value})}
+                    required
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <div className="form-group">
+                  <label className="form-label">Payment Method</label>
                   <select
-                    name="status"
-                    value={formData.status}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="form-input"
+                    value={formData.payment_method}
+                    onChange={(e) => setFormData({...formData, payment_method: e.target.value})}
+                    required
                   >
-                    <option value="paid">Paid</option>
-                    <option value="pending">Pending</option>
-                    <option value="cancelled">Cancelled</option>
+                    <option value="">Select</option>
+                    <option value="Cash">Cash</option>
+                    <option value="Credit Card">Credit Card</option>
+                    <option value="Bank Transfer">Bank Transfer</option>
+                    <option value="Mobile Money">Mobile Money</option>
                   </select>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                  <textarea
-                    name="notes"
-                    value={formData.notes}
-                    onChange={handleInputChange}
-                    rows="2"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Additional notes"
-                  />
-                </div>
-                <div className="flex justify-end gap-3 pt-4">
-                  <Button variant="secondary" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-                  <Button type="submit" variant="primary">
-                    {editingExpense ? 'Update Expense' : 'Add Expense'}
-                  </Button>
-                </div>
-              </form>
-            </div>
+              </div>
+              <div className="modal-actions">
+                <button type="button" className="btn-cancel" onClick={() => setShowModal(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn-submit">
+                  {editingExpense ? 'Update Expense' : 'Add Expense'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
+
+      {/* Footer */}
+      <footer className="expenses-footer">
+        <div className="expenses-footer-content">
+          <span className="expenses-footer-text">© 2026 Fezher Supreme · Expense Management</span>
+          <span className="expenses-footer-currency">Currency: {currency}</span>
+          <div className="expenses-footer-links">
+            <a href="#">Privacy</a>
+            <a href="#">Terms</a>
+            <a href="#">Support</a>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }

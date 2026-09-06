@@ -14,7 +14,7 @@ const WelcomeTour = ({ isFirstVisit, onComplete }) => {
 
   const steps = [
     {
-      title: '👋 Welcome to BizFlow!',
+      title: '👋 Welcome to Fezher Supreme!',
       description: 'This is your all-in-one business management platform. Let\'s take a quick tour!',
     },
     {
@@ -49,7 +49,7 @@ const WelcomeTour = ({ isFirstVisit, onComplete }) => {
     },
     {
       title: '🎉 You\'re All Set!',
-      description: 'You\'re ready to start managing your business with BizFlow. Happy managing!',
+      description: 'You\'re ready to start managing your business with Fezher Supreme. Happy managing!',
     },
   ]
 

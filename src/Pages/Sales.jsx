@@ -1,285 +1,216 @@
 import React, { useState, useEffect } from 'react'
-import { salesService } from '../services/salesService'
-import { exportService } from '../services/exportService'
-import { notificationService } from '../services/notificationService'
-import Button from '../components/common/Button'
-import SaleModal from '../components/sales/SaleModal'
-import SaleDetails from '../components/sales/SaleDetails'
-import ExportButtons from '../components/common/ExportButtons'
-import RoleBasedAccess from '../components/common/RoleBasedAccess'
-import { useAuth } from '../context/AuthContext'
-import { formatCurrency, formatDate } from '../utils/helpers'
+import { 
+  ShoppingBag, 
+  Search, 
+  Filter, 
+  ChevronDown,
+  Eye,
+  Download,
+  Printer,
+  CheckCircle,
+  Clock,
+  XCircle,
+  DollarSign,
+  Users,
+  Calendar
+} from 'lucide-react'
+import { useCurrency } from '../context/CurrencyContext'
+import './Sales.css'
 
-const Sales = () => {
-  const { isAdmin, isManager } = useAuth()
+function Sales() {
+  const { formatCurrency, currency } = useCurrency()
   const [sales, setSales] = useState([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false)
-  const [selectedSale, setSelectedSale] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [dateFilter, setDateFilter] = useState('')
 
   useEffect(() => {
-    loadSales()
+    setTimeout(() => {
+      setSales([
+        { id: 'ORD-001', customer: 'John Doe', amount: 299.99, status: 'completed', date: '2026-09-03', items: 3 },
+        { id: 'ORD-002', customer: 'Jane Smith', amount: 149.50, status: 'pending', date: '2026-09-03', items: 2 },
+        { id: 'ORD-003', customer: 'Bob Johnson', amount: 89.99, status: 'completed', date: '2026-09-02', items: 1 },
+        { id: 'ORD-004', customer: 'Alice Brown', amount: 449.00, status: 'processing', date: '2026-09-02', items: 4 },
+        { id: 'ORD-005', customer: 'Charlie Wilson', amount: 199.99, status: 'cancelled', date: '2026-09-01', items: 2 }
+      ])
+      setLoading(false)
+    }, 1000)
   }, [])
 
-  const loadSales = async () => {
-    setLoading(true)
-    setError('')
-    try {
-      const { data, error } = await salesService.getSales()
-      if (error) throw new Error(error)
-      setSales(data || [])
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
+  const getStatusConfig = (status) => {
+    const configs = {
+      completed: { label: 'Completed', icon: CheckCircle, color: '#10b981', bg: '#ecfdf5' },
+      pending: { label: 'Pending', icon: Clock, color: '#f59e0b', bg: '#fffbeb' },
+      processing: { label: 'Processing', icon: Clock, color: '#3b82f6', bg: '#eff6ff' },
+      cancelled: { label: 'Cancelled', icon: XCircle, color: '#ef4444', bg: '#fef2f2' }
     }
+    return configs[status] || configs.pending
   }
-
-  const handleCreateSale = async (saleData) => {
-    const { data, error } = await salesService.createSale(saleData)
-    if (error) throw new Error(error)
-    setSales([data, ...sales])
-    loadSales()
-    notificationService.saleCreated(data?.invoice_number || 'New Sale')
-  }
-
-  const handleViewSale = (sale) => {
-    setSelectedSale(sale)
-    setIsDetailsOpen(true)
-  }
-
-  const handleEditSale = (sale) => {
-    setSelectedSale(sale)
-    setIsModalOpen(true)
-  }
-
-  const handleDeleteSale = async (id) => {
-    if (!confirm('Are you sure you want to delete this sale?')) return
-    try {
-      const sale = sales.find(s => s.id === id)
-      const { error } = await salesService.deleteSale(id)
-      if (error) throw new Error(error)
-      setSales(sales.filter(s => s.id !== id))
-      notificationService.saleDeleted(sale?.invoice_number || 'Sale')
-    } catch (err) {
-      notificationService.error('Failed to delete sale', err.message)
-    }
-  }
-
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'paid': return 'text-green-800 bg-green-100'
-      case 'completed': return 'text-green-800 bg-green-100'
-      case 'pending': return 'text-yellow-800 bg-yellow-100'
-      case 'cancelled': return 'text-red-800 bg-red-100'
-      default: return 'text-gray-800 bg-gray-100'
-    }
-  }
-
-  // Export functions
-  const exportSalesAsExcel = () => {
-    exportService.exportSalesToExcel(sales)
-  }
-
-  const printSalesReport = () => {
-    const tableElement = document.querySelector('.sales-table')
-    if (tableElement) {
-      const wrapper = document.createElement('div')
-      wrapper.innerHTML = `
-        <div class="header">
-          <h1>Sales Report</h1>
-          <p>Generated: ${new Date().toLocaleDateString()}</p>
-          <p>Total Sales: ${sales.length}</p>
-          <p>Total Revenue: ${formatCurrency(sales.reduce((sum, s) => sum + (s.total_amount || 0), 0))}</p>
-        </div>
-        ${tableElement.innerHTML}
-      `
-      exportService.printReport(wrapper)
-    }
-  }
-
-  // Filter sales
-  const filteredSales = sales.filter(sale => {
-    const matchSearch = sale.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        sale.invoice_number?.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchStatus = statusFilter === 'all' || sale.status?.toLowerCase() === statusFilter
-    const matchDate = !dateFilter || sale.sale_date === dateFilter
-    return matchSearch && matchStatus && matchDate
-  })
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading sales...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-        Error loading sales: {error}
+      <div className="sales-loading">
+        <div className="sales-loading-spinner"></div>
+        <p className="sales-loading-text">Loading sales data...</p>
       </div>
     )
   }
 
   return (
-    <div>
+    <div className="sales">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Sales</h1>
-        <div className="flex flex-wrap items-center gap-2">
-          <RoleBasedAccess managerOnly>
-            <Button variant="primary" onClick={() => { setSelectedSale(null); setIsModalOpen(true); }}>
-              Create Sale
-            </Button>
-          </RoleBasedAccess>
-          <RoleBasedAccess adminOnly>
-            <Button variant="primary" onClick={() => { setSelectedSale(null); setIsModalOpen(true); }}>
-              Create Sale
-            </Button>
-          </RoleBasedAccess>
-          {/* If user is staff, hide the Create Sale button */}
-          {!isAdmin && !isManager && (
-            <Button variant="secondary" disabled className="opacity-50 cursor-not-allowed">
-              Create Sale (Staff - View Only)
-            </Button>
-          )}
-          <ExportButtons
-            showImage={false}
-            showPDF={false}
-            onExportExcel={exportSalesAsExcel}
-            onPrint={printSalesReport}
-          />
+      <div className="sales-header">
+        <div>
+          <div className="sales-badge">
+            <div className="sales-badge-icon">
+              <ShoppingBag size={16} color="white" />
+            </div>
+            <span className="sales-badge-text">SALES</span>
+          </div>
+          <h1 className="sales-title">Sales</h1>
+          <p className="sales-subtitle">Track and manage your sales orders. Currency: {currency}</p>
+        </div>
+        <div className="sales-actions">
+          <button className="sales-export-btn">
+            <Download size={16} />
+            Export
+          </button>
+          <button className="sales-print-btn">
+            <Printer size={16} />
+            Print
+          </button>
+        </div>
+      </div>
+
+      {/* Summary Cards */}
+      <div className="sales-summary">
+        <div className="summary-card">
+          <div className="summary-icon summary-icon-blue">
+            <DollarSign size={20} color="white" />
+          </div>
+          <div>
+            <p className="summary-label">Total Revenue</p>
+            <p className="summary-value">{formatCurrency(1188.47)}</p>
+          </div>
+        </div>
+        <div className="summary-card">
+          <div className="summary-icon summary-icon-green">
+            <CheckCircle size={20} color="white" />
+          </div>
+          <div>
+            <p className="summary-label">Completed Orders</p>
+            <p className="summary-value">3</p>
+          </div>
+        </div>
+        <div className="summary-card">
+          <div className="summary-icon summary-icon-orange">
+            <Clock size={20} color="white" />
+          </div>
+          <div>
+            <p className="summary-label">Pending Orders</p>
+            <p className="summary-value">2</p>
+          </div>
+        </div>
+        <div className="summary-card">
+          <div className="summary-icon summary-icon-purple">
+            <Users size={20} color="white" />
+          </div>
+          <div>
+            <p className="summary-label">Total Customers</p>
+            <p className="summary-value">5</p>
+          </div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-6">
-        <div className="relative">
+      <div className="sales-filters">
+        <div className="sales-search">
+          <Search size={18} className="sales-search-icon" />
           <input
             type="text"
-            placeholder="Search by customer or invoice..."
+            placeholder="Search orders..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full sm:w-64 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10"
+            className="sales-search-input"
           />
-          <svg className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
         </div>
-
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="all">All Status</option>
-          <option value="paid">Paid</option>
-          <option value="pending">Pending</option>
-          <option value="completed">Completed</option>
-          <option value="cancelled">Cancelled</option>
-        </select>
-
-        <input
-          type="date"
-          value={dateFilter}
-          onChange={(e) => setDateFilter(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-
-        <Button variant="secondary" size="sm" onClick={() => { setSearchTerm(''); setStatusFilter('all'); setDateFilter(''); }}>
-          Clear Filters
-        </Button>
+        <div className="sales-filter-group">
+          <button className="sales-filter-btn">
+            <Filter size={16} />
+            Status
+            <ChevronDown size={14} />
+          </button>
+          <button className="sales-filter-btn">
+            <Calendar size={16} />
+            Date Range
+            <ChevronDown size={14} />
+          </button>
+        </div>
       </div>
 
-      {/* Sales Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 sales-table">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredSales.length === 0 ? (
-                <tr>
-                  <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
-                    No sales found matching your filters
+      {/* Table */}
+      <div className="sales-table-wrapper">
+        <table className="sales-table">
+          <thead>
+            <tr>
+              <th>Order ID</th>
+              <th>Customer</th>
+              <th>Date</th>
+              <th>Items</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th className="table-actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sales.map((order) => {
+              const statusConfig = getStatusConfig(order.status)
+              const StatusIcon = statusConfig.icon
+              return (
+                <tr key={order.id}>
+                  <td>
+                    <span className="order-id">{order.id}</span>
+                  </td>
+                  <td className="order-customer">{order.customer}</td>
+                  <td className="order-date">{order.date}</td>
+                  <td className="order-items">{order.items}</td>
+                  <td className="order-amount">{formatCurrency(order.amount)}</td>
+                  <td>
+                    <span className="order-status" style={{ background: statusConfig.bg, color: statusConfig.color }}>
+                      <StatusIcon size={12} />
+                      {statusConfig.label}
+                    </span>
+                  </td>
+                  <td className="table-actions">
+                    <button className="action-btn view">
+                      <Eye size={16} />
+                    </button>
                   </td>
                 </tr>
-              ) : (
-                filteredSales.map((sale) => (
-                  <tr key={sale.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {sale.invoice_number || '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {sale.customer_name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {formatCurrency(sale.total_amount)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {formatDate(sale.sale_date)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(sale.status)}`}>
-                        {sale.status || 'pending'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      <div className="flex gap-1 flex-wrap">
-                        <Button variant="outline" size="sm" onClick={() => handleViewSale(sale)}>View</Button>
-                        <RoleBasedAccess managerOnly>
-                          <Button variant="outline" size="sm" onClick={() => handleEditSale(sale)}>Edit</Button>
-                        </RoleBasedAccess>
-                        <RoleBasedAccess adminOnly>
-                          <Button variant="danger" size="sm" onClick={() => handleDeleteSale(sale.id)}>Delete</Button>
-                        </RoleBasedAccess>
-                        {/* If user is staff, show disabled buttons */}
-                        {!isAdmin && !isManager && (
-                          <>
-                            <Button variant="outline" size="sm" disabled className="opacity-50 cursor-not-allowed">Edit</Button>
-                            <Button variant="danger" size="sm" disabled className="opacity-50 cursor-not-allowed">Delete</Button>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+              )
+            })}
+          </tbody>
+        </table>
       </div>
 
-      <SaleModal
-        isOpen={isModalOpen}
-        onClose={() => { setIsModalOpen(false); setSelectedSale(null); }}
-        onSave={handleCreateSale}
-        sale={selectedSale}
-      />
+      {/* Stats */}
+      <div className="sales-stats">
+        <span className="sales-stats-text">
+          Showing {sales.length} orders · Currency: {currency}
+        </span>
+      </div>
 
-      <SaleDetails
-        sale={selectedSale}
-        isOpen={isDetailsOpen}
-        onClose={() => setIsDetailsOpen(false)}
-      />
+      {/* Footer */}
+      <footer className="sales-footer">
+        <div className="sales-footer-content">
+          <span className="sales-footer-text">© 2026 Fezher Supreme · Sales Management</span>
+          <span className="sales-footer-currency">Currency: {currency}</span>
+          <div className="sales-footer-links">
+            <a href="#">Privacy</a>
+            <a href="#">Terms</a>
+            <a href="#">Support</a>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }

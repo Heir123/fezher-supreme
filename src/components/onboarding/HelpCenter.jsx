@@ -8,7 +8,7 @@ const HelpCenter = ({ onStartTour }) => {
     {
       icon: '📊',
       title: 'Getting Started',
-      description: 'Learn the basics of BizFlow and how to navigate the dashboard.',
+      description: 'Learn the basics of Fezher Supreme and how to navigate the dashboard.',
       link: '#getting-started'
     },
     {
@@ -75,7 +75,7 @@ const HelpCenter = ({ onStartTour }) => {
               <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
                 <h3 className="font-medium text-blue-800">🎯 Take a Tour</h3>
                 <p className="text-sm text-blue-600 mt-1">
-                  New to BizFlow? Take a guided tour to learn about all the features!
+                  New to Fezher Supreme? Take a guided tour to learn about all the features!
                 </p>
                 <Button 
                   variant="primary" 
@@ -112,7 +112,7 @@ const HelpCenter = ({ onStartTour }) => {
 
               <div className="mt-6 p-4 bg-gray-50 rounded-lg">
                 <p className="text-sm text-gray-600 text-center">
-                  Need more help? Contact us at <a href="mailto:support@bizflow.com" className="text-blue-600">support@bizflow.com</a>
+                  Need more help? Contact us at <a href="mailto:support@fezhersupreme.co.za" className="text-blue-600">support@fezhersupreme.co.za</a>
                 </p>
               </div>
             </div>

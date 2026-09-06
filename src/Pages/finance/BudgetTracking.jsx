@@ -1,294 +1,436 @@
 import React, { useState, useEffect } from 'react'
-import { budgetService } from '../../services/budgetService'
-import { notificationService } from '../../services/notificationService'
-import Button from '../../components/common/Button'
-import { formatCurrency } from '../../utils/helpers'
+import { 
+  DollarSign, 
+  TrendingUp, 
+  TrendingDown, 
+  Calendar,
+  Plus,
+  Edit,
+  Trash2,
+  Search,
+  Filter,
+  ChevronDown,
+  PieChart,
+  BarChart3,
+  X,
+  Check,
+  AlertCircle
+} from 'lucide-react'
+import { useCurrency } from '../../context/CurrencyContext'
+import './BudgetTracking.css'
 
-const BudgetTracking = () => {
-  const [budgets, setBudgets] = useState([])
-  const [comparison, setComparison] = useState([])
-  const [summary, setSummary] = useState(null)
+function BudgetTracking() {
+  const { formatCurrency, currency } = useCurrency()
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
-  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [budgets, setBudgets] = useState([])
+  const [searchTerm, setSearchTerm] = useState('')
+  const [showModal, setShowModal] = useState(false)
   const [editingBudget, setEditingBudget] = useState(null)
+  const [selectedPeriod, setSelectedPeriod] = useState('month')
   const [formData, setFormData] = useState({
     category: '',
-    amount: '',
-    description: '',
-    period: 'monthly'
+    allocated: '',
+    spent: '',
+    period: '',
+    description: ''
   })
 
   useEffect(() => {
-    loadData()
-  }, [selectedYear, selectedMonth])
-
-  const loadData = async () => {
-    setLoading(true)
-    setError('')
-    try {
-      const { data: budgetsData, error: budgetsError } = await budgetService.getBudgets(selectedYear, selectedMonth)
-      if (budgetsError) throw new Error(budgetsError)
-      setBudgets(budgetsData || [])
-
-      const { data: comparisonData, error: comparisonError } = await budgetService.getBudgetVsActual(selectedYear, selectedMonth)
-      if (comparisonError) throw new Error(comparisonError)
-      setComparison(comparisonData || [])
-
-      const { data: summaryData, error: summaryError } = await budgetService.getBudgetSummary(selectedYear, selectedMonth)
-      if (summaryError) throw new Error(summaryError)
-      setSummary(summaryData)
-    } catch (err) {
-      setError(err.message)
-    } finally {
+    setTimeout(() => {
+      setBudgets([
+        { 
+          id: 1, 
+          category: 'Marketing', 
+          allocated: 5000, 
+          spent: 3200, 
+          period: '2026-09', 
+          description: 'Q3 Marketing campaign',
+          status: 'on-track'
+        },
+        { 
+          id: 2, 
+          category: 'Operations', 
+          allocated: 8000, 
+          spent: 7500, 
+          period: '2026-09', 
+          description: 'Operational expenses',
+          status: 'over-budget'
+        },
+        { 
+          id: 3, 
+          category: 'R&D', 
+          allocated: 3000, 
+          spent: 2100, 
+          period: '2026-10', 
+          description: 'Research and development',
+          status: 'on-track'
+        },
+        { 
+          id: 4, 
+          category: 'Sales', 
+          allocated: 4000, 
+          spent: 3800, 
+          period: '2026-09', 
+          description: 'Sales team expenses',
+          status: 'near-limit'
+        }
+      ])
       setLoading(false)
-    }
+    }, 1000)
+  }, [])
+
+  const getCurrentMonth = () => {
+    const today = new Date()
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
   }
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault()
-    try {
-      const budgetData = {
+    if (editingBudget) {
+      setBudgets(budgets.map(b => 
+        b.id === editingBudget.id ? { 
+          ...b, 
+          ...formData, 
+          allocated: parseFloat(formData.allocated),
+          spent: parseFloat(formData.spent),
+          status: calculateStatus(formData.spent, formData.allocated)
+        } : b
+      ))
+    } else {
+      const newBudget = {
+        id: Date.now(),
         ...formData,
-        amount: parseFloat(formData.amount),
-        year: selectedYear,
-        month: selectedMonth
+        allocated: parseFloat(formData.allocated),
+        spent: parseFloat(formData.spent),
+        status: calculateStatus(formData.spent, formData.allocated)
       }
+      setBudgets([...budgets, newBudget])
+    }
+    setShowModal(false)
+    setEditingBudget(null)
+    setFormData({ category: '', allocated: '', spent: '', period: getCurrentMonth(), description: '' })
+  }
 
-      if (editingBudget) {
-        const { data, error } = await budgetService.updateBudget(editingBudget.id, budgetData)
-        if (error) throw new Error(error)
-        notificationService.success('Budget Updated', `${data.category} updated`)
-      } else {
-        const { data, error } = await budgetService.createBudget(budgetData)
-        if (error) throw new Error(error)
-        notificationService.success('Budget Added', `${data.category} added`)
-      }
+  const calculateStatus = (spent, allocated) => {
+    const ratio = spent / allocated
+    if (ratio >= 1) return 'over-budget'
+    if (ratio >= 0.9) return 'near-limit'
+    return 'on-track'
+  }
 
-      setIsModalOpen(false)
-      setEditingBudget(null)
-      setFormData({ category: '', amount: '', description: '', period: 'monthly' })
-      loadData()
-    } catch (err) {
-      notificationService.error('Failed to save budget', err.message)
+  const handleEdit = (budget) => {
+    setEditingBudget(budget)
+    setFormData({
+      category: budget.category,
+      allocated: budget.allocated.toString(),
+      spent: budget.spent.toString(),
+      period: budget.period,
+      description: budget.description || ''
+    })
+    setShowModal(true)
+  }
+
+  const handleDelete = (id) => {
+    if (confirm('Are you sure you want to delete this budget?')) {
+      setBudgets(budgets.filter(b => b.id !== id))
     }
   }
 
-  const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to delete this budget?')) return
-    try {
-      const { error } = await budgetService.deleteBudget(id)
-      if (error) throw new Error(error)
-      notificationService.success('Budget Deleted', 'Budget removed')
-      loadData()
-    } catch (err) {
-      notificationService.error('Failed to delete', err.message)
+  const getStatusInfo = (status) => {
+    const statuses = {
+      'on-track': { label: 'On Track', color: '#10b981', bg: '#ecfdf5', icon: '✅' },
+      'near-limit': { label: 'Near Limit', color: '#f59e0b', bg: '#fffbeb', icon: '⚠️' },
+      'over-budget': { label: 'Over Budget', color: '#ef4444', bg: '#fef2f2', icon: '🚨' }
     }
+    return statuses[status] || statuses['on-track']
   }
 
-  const getVarianceColor = (variance) => {
-    if (variance > 0) return 'text-green-600'
-    if (variance < 0) return 'text-red-600'
-    return 'text-gray-600'
-  }
+  const totalAllocated = budgets.reduce((sum, b) => sum + b.allocated, 0)
+  const totalSpent = budgets.reduce((sum, b) => sum + b.spent, 0)
+  const remaining = totalAllocated - totalSpent
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading budget data...</p>
-        </div>
+      <div className="budget-loading">
+        <div className="budget-loading-spinner"></div>
+        <p className="budget-loading-text">Loading budget data...</p>
       </div>
     )
   }
-
-  if (error) {
-    return (
-      <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-        Error: {error}
-      </div>
-    )
-  }
-
-  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-  const years = [2024, 2025, 2026]
 
   return (
-    <div>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">💰 Budget Tracking</h1>
-        <div className="flex flex-wrap gap-2">
-          <select
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-            className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            {months.map((month, index) => (
-              <option key={index} value={index + 1}>{month}</option>
-            ))}
-          </select>
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-            className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            {years.map(year => (
-              <option key={year} value={year}>{year}</option>
-            ))}
-          </select>
-          <Button variant="primary" onClick={() => { setEditingBudget(null); setIsModalOpen(true); }}>
-            Add Budget
-          </Button>
+    <div className="budget">
+      {/* Header */}
+      <div className="budget-header">
+        <div>
+          <div className="budget-badge">
+            <div className="budget-badge-icon">
+              <DollarSign size={16} color="white" />
+            </div>
+            <span className="budget-badge-text">BUDGET</span>
+          </div>
+          <h1 className="budget-title">Budget Tracking</h1>
+          <p className="budget-subtitle">Manage and track your budget allocations. Currency: {currency}</p>
         </div>
+        <button 
+          className="budget-add-btn"
+          onClick={() => {
+            setEditingBudget(null)
+            setFormData({ category: '', allocated: '', spent: '', period: getCurrentMonth(), description: '' })
+            setShowModal(true)
+          }}
+        >
+          <Plus size={16} />
+          Add Budget
+        </button>
       </div>
 
       {/* Summary Cards */}
-      {summary && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white rounded-lg shadow p-4">
-            <p className="text-sm font-medium text-gray-500">Total Budgeted</p>
-            <p className="text-xl font-bold text-gray-900">{formatCurrency(summary.totalBudgeted)}</p>
+      <div className="budget-summary">
+        <div className="budget-stat">
+          <div className="budget-stat-icon budget-stat-blue">
+            <DollarSign size={20} color="white" />
           </div>
-          <div className="bg-white rounded-lg shadow p-4">
-            <p className="text-sm font-medium text-gray-500">Total Actual</p>
-            <p className="text-xl font-bold text-blue-600">{formatCurrency(summary.totalActual)}</p>
+          <div>
+            <p className="budget-stat-label">Total Allocated</p>
+            <p className="budget-stat-value">{formatCurrency(totalAllocated)}</p>
           </div>
-          <div className={`bg-white rounded-lg shadow p-4 ${summary.totalVariance >= 0 ? 'border-l-4 border-green-500' : 'border-l-4 border-red-500'}`}>
-            <p className="text-sm font-medium text-gray-500">Variance</p>
-            <p className={`text-xl font-bold ${summary.totalVariance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatCurrency(summary.totalVariance)}
+        </div>
+        <div className="budget-stat">
+          <div className="budget-stat-icon budget-stat-purple">
+            <TrendingDown size={20} color="white" />
+          </div>
+          <div>
+            <p className="budget-stat-label">Total Spent</p>
+            <p className="budget-stat-value">{formatCurrency(totalSpent)}</p>
+          </div>
+        </div>
+        <div className="budget-stat">
+          <div className={`budget-stat-icon ${remaining >= 0 ? 'budget-stat-green' : 'budget-stat-red'}`}>
+            <TrendingUp size={20} color="white" />
+          </div>
+          <div>
+            <p className="budget-stat-label">Remaining</p>
+            <p className={`budget-stat-value ${remaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {formatCurrency(remaining)}
             </p>
           </div>
         </div>
-      )}
-
-      {/* Budget Comparison Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Budgeted</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actual</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Variance</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">% Used</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {comparison.length === 0 ? (
-                <tr>
-                  <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
-                    No budgets found for this period
-                  </td>
-                </tr>
-              ) : (
-                comparison.map((item, index) => (
-                  <tr key={index}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {item.category}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {formatCurrency(item.budgeted)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600">
-                      {formatCurrency(item.actual)}
-                    </td>
-                    <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${getVarianceColor(item.variance)}`}>
-                      {formatCurrency(item.variance)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <div className="w-full bg-gray-200 rounded-full h-2.5">
-                          <div 
-                            className={`h-2.5 rounded-full ${item.percentage > 100 ? 'bg-red-600' : 'bg-green-600'}`}
-                            style={{ width: `${Math.min(item.percentage, 100)}%` }}
-                          ></div>
-                        </div>
-                        <span className="text-xs text-gray-500">{item.percentage.toFixed(0)}%</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      <Button variant="outline" size="sm" onClick={() => {
-                        const budget = budgets.find(b => b.category === item.category)
-                        if (budget) {
-                          setEditingBudget(budget)
-                          setFormData({
-                            category: budget.category,
-                            amount: budget.amount,
-                            description: budget.description || '',
-                            period: budget.period || 'monthly'
-                          })
-                          setIsModalOpen(true)
-                        }
-                      }}>Edit</Button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+        <div className="budget-stat">
+          <div className="budget-stat-icon budget-stat-orange">
+            <PieChart size={20} color="white" />
+          </div>
+          <div>
+            <p className="budget-stat-label">Utilization</p>
+            <p className="budget-stat-value">
+              {totalAllocated > 0 ? Math.round((totalSpent / totalAllocated) * 100) : 0}%
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* Add/Edit Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              {editingBudget ? 'Edit Budget' : 'Add Budget'}
-            </h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+      {/* Filters */}
+      <div className="budget-filters">
+        <div className="budget-search">
+          <Search size={18} className="budget-search-icon" />
+          <input
+            type="text"
+            placeholder="Search budgets..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="budget-search-input"
+          />
+        </div>
+        <div className="budget-filter-group">
+          <div className="budget-period-selector">
+            <button 
+              className={`period-btn ${selectedPeriod === 'month' ? 'active' : ''}`}
+              onClick={() => setSelectedPeriod('month')}
+            >
+              Month
+            </button>
+            <button 
+              className={`period-btn ${selectedPeriod === 'quarter' ? 'active' : ''}`}
+              onClick={() => setSelectedPeriod('quarter')}
+            >
+              Quarter
+            </button>
+            <button 
+              className={`period-btn ${selectedPeriod === 'year' ? 'active' : ''}`}
+              onClick={() => setSelectedPeriod('year')}
+            >
+              Year
+            </button>
+          </div>
+          <button className="budget-filter-btn">
+            <Filter size={16} />
+            Status
+            <ChevronDown size={14} />
+          </button>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="budget-table-wrapper">
+        <table className="budget-table">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>Period</th>
+              <th>Allocated</th>
+              <th>Spent</th>
+              <th>Remaining</th>
+              <th>Status</th>
+              <th className="table-actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {budgets
+              .filter(b => b.category.toLowerCase().includes(searchTerm.toLowerCase()))
+              .map((budget) => {
+                const statusInfo = getStatusInfo(budget.status)
+                const remaining = budget.allocated - budget.spent
+                return (
+                  <tr key={budget.id}>
+                    <td>
+                      <div className="budget-category">
+                        <span className="budget-category-name">{budget.category}</span>
+                        {budget.description && (
+                          <span className="budget-category-desc">{budget.description}</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="budget-period">{budget.period}</td>
+                    <td className="budget-amount allocated">{formatCurrency(budget.allocated)}</td>
+                    <td className="budget-amount spent">{formatCurrency(budget.spent)}</td>
+                    <td className={`budget-amount remaining ${remaining < 0 ? 'negative' : ''}`}>
+                      {formatCurrency(remaining)}
+                    </td>
+                    <td>
+                      <span className="budget-status" style={{ background: statusInfo.bg, color: statusInfo.color }}>
+                        {statusInfo.icon} {statusInfo.label}
+                      </span>
+                    </td>
+                    <td className="table-actions">
+                      <button className="action-btn edit" onClick={() => handleEdit(budget)}>
+                        <Edit size={14} />
+                      </button>
+                      <button className="action-btn delete" onClick={() => handleDelete(budget.id)}>
+                        <Trash2 size={14} />
+                      </button>
+                    </td>
+                  </tr>
+                )
+              })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Stats */}
+      <div className="budget-stats">
+        <span className="budget-stats-text">
+          Showing {budgets.filter(b => b.category.toLowerCase().includes(searchTerm.toLowerCase())).length} of {budgets.length} budgets · Currency: {currency}
+        </span>
+      </div>
+
+      {/* Modal */}
+      {showModal && (
+        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2 className="modal-title">
+                {editingBudget ? 'Edit Budget' : 'Add New Budget'}
+              </h2>
+              <button className="modal-close" onClick={() => setShowModal(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleSubmit} className="modal-form">
+              <div className="form-group">
+                <label className="form-label">Category</label>
                 <input
                   type="text"
+                  className="form-input"
                   value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  onChange={(e) => setFormData({...formData, category: e.target.value})}
+                  placeholder="e.g., Marketing"
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="e.g., Office Supplies"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Budget Amount</label>
+              <div className="form-group">
+                <label className="form-label">Period (Year-Month)</label>
                 <input
-                  type="number"
-                  value={formData.amount}
-                  onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                  type="month"
+                  className="form-input"
+                  value={formData.period}
+                  onChange={(e) => setFormData({...formData, period: e.target.value})}
                   required
-                  min="0"
-                  step="0.01"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="0.00"
                 />
+                <small className="form-hint">Select the budget period</small>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">Allocated Amount ({currency})</label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    value={formData.allocated}
+                    onChange={(e) => setFormData({...formData, allocated: e.target.value})}
+                    placeholder="0.00"
+                    step="0.01"
+                    min="0"
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Spent Amount ({currency})</label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    value={formData.spent}
+                    onChange={(e) => setFormData({...formData, spent: e.target.value})}
+                    placeholder="0.00"
+                    step="0.01"
+                    min="0"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Description</label>
                 <textarea
+                  className="form-textarea"
                   value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows="2"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Optional description"
+                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  placeholder="Budget description..."
+                  rows={2}
                 />
               </div>
-              <div className="flex justify-end gap-3 pt-4">
-                <Button variant="secondary" onClick={() => { setIsModalOpen(false); setEditingBudget(null); }}>
+              <div className="modal-actions">
+                <button type="button" className="btn-cancel" onClick={() => setShowModal(false)}>
                   Cancel
-                </Button>
-                <Button type="submit" variant="primary">
-                  {editingBudget ? 'Update' : 'Add'}
-                </Button>
+                </button>
+                <button type="submit" className="btn-submit">
+                  {editingBudget ? 'Update Budget' : 'Add Budget'}
+                </button>
               </div>
             </form>
           </div>
         </div>
       )}
+
+      {/* Footer */}
+      <footer className="budget-footer">
+        <div className="budget-footer-content">
+          <span className="budget-footer-text">© 2026 Fezher Supreme · Budget Tracking</span>
+          <span className="budget-footer-currency">Currency: {currency}</span>
+          <div className="budget-footer-links">
+            <a href="#">Privacy</a>
+            <a href="#">Terms</a>
+            <a href="#">Support</a>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }

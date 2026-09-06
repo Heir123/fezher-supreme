@@ -1,178 +1,181 @@
- import React, { useState, useEffect } from 'react'
-import { customerService } from '../services/customerService'
-import Button from '../components/common/Button'
-import CustomerModal from '../components/customers/CustomerModal'
-import { formatDate } from '../utils/helpers'
-import { notificationService } from '../services/notificationService'
+import React, { useState, useEffect } from 'react'
+import { 
+  Users, 
+  Search, 
+  Filter, 
+  ChevronDown,
+  Mail,
+  Phone,
+  Calendar,
+  MoreHorizontal,
+  UserPlus,
+  Star
+} from 'lucide-react'
+import { useCurrency } from '../context/CurrencyContext'
+import './Customers.css'
 
-const Customers = () => {
+function Customers() {
+  const { formatCurrency, currency } = useCurrency()
   const [customers, setCustomers] = useState([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
-  const [selectedCustomer, setSelectedCustomer] = useState(null)
-  const [isModalOpen, setIsModalOpen] = useState(false)
 
   useEffect(() => {
-    loadCustomers()
-  }, [])
-
-  const loadCustomers = async () => {
-    setLoading(true)
-    setError('')
-    try {
-      const { data, error } = await customerService.getCustomersWithSales()
-      if (error) throw new Error(error)
-      setCustomers(data || [])
-    } catch (err) {
-      setError(err.message)
-    } finally {
+    setTimeout(() => {
+      setCustomers([
+        { id: 1, name: 'John Doe', email: 'john@example.com', phone: '+1 555-0101', totalSpent: 899.97, orders: 5, joined: '2025-06-15', status: 'active' },
+        { id: 2, name: 'Jane Smith', email: 'jane@example.com', phone: '+1 555-0102', totalSpent: 449.50, orders: 3, joined: '2025-07-20', status: 'active' },
+        { id: 3, name: 'Bob Johnson', email: 'bob@example.com', phone: '+1 555-0103', totalSpent: 179.98, orders: 2, joined: '2025-08-01', status: 'inactive' },
+        { id: 4, name: 'Alice Brown', email: 'alice@example.com', phone: '+1 555-0104', totalSpent: 1349.00, orders: 7, joined: '2025-05-10', status: 'active' },
+        { id: 5, name: 'Charlie Wilson', email: 'charlie@example.com', phone: '+1 555-0105', totalSpent: 299.99, orders: 2, joined: '2025-09-01', status: 'active' }
+      ])
       setLoading(false)
-    }
-  }
-
-  const handleAddCustomer = () => {
-    setSelectedCustomer(null)
-    setIsModalOpen(true)
-  }
-
-  const handleEditCustomer = (customer) => {
-    setSelectedCustomer(customer)
-    setIsModalOpen(true)
-  }
-
- const handleSaveCustomer = async (customerData) => {
-  try {
-    if (selectedCustomer) {
-      const { data, error } = await customerService.updateCustomer(selectedCustomer.id, customerData)
-      if (error) throw new Error(error)
-      setCustomers(customers.map(c => c.id === data.id ? data : c))
-      notificationService.success('Customer Updated', `${customerData.name} has been updated`)
-    } else {
-      const { data, error } = await customerService.createCustomer(customerData)
-      if (error) throw new Error(error)
-      setCustomers([data, ...customers])
-      notificationService.success('Customer Added', `${customerData.name} has been added successfully`)
-    }
-    loadCustomers()
-  } catch (err) {
-    notificationService.error('Failed to save customer', err.message)
-  }
-}
-
-  const handleDelete = async (id) => {
-  if (!confirm('Are you sure you want to delete this customer?')) return
-  try {
-    const customer = customers.find(c => c.id === id)
-    const { error } = await customerService.deleteCustomer(id)
-    if (error) throw new Error(error)
-    setCustomers(customers.filter(c => c.id !== id))
-    notificationService.success('Customer Deleted', `${customer?.name || 'Customer'} has been deleted`)
-  } catch (err) {
-    notificationService.error('Failed to delete customer', err.message)
-  }
-}
-
-  const filteredCustomers = customers.filter(customer =>
-    customer.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (customer.email && customer.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (customer.phone && customer.phone.includes(searchTerm))
-  )
+    }, 1000)
+  }, [])
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading customers...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-        Error loading customers: {error}
+      <div className="customers-loading">
+        <div className="customers-loading-spinner"></div>
+        <p className="customers-loading-text">Loading customers...</p>
       </div>
     )
   }
 
   return (
-    <div>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search customers..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full sm:w-64 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10"
-            />
-            <svg className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
+    <div className="customers">
+      {/* Header */}
+      <div className="customers-header">
+        <div>
+          <div className="customers-badge">
+            <div className="customers-badge-icon">
+              <Users size={16} color="white" />
+            </div>
+            <span className="customers-badge-text">CUSTOMERS</span>
           </div>
-          <Button variant="primary" onClick={handleAddCustomer}>
-            Add Customer
-          </Button>
+          <h1 className="customers-title">Customers</h1>
+          <p className="customers-subtitle">Manage your customer relationships. Currency: {currency}</p>
+        </div>
+        <button className="customers-add-btn">
+          <UserPlus size={16} />
+          Add Customer
+        </button>
+      </div>
+
+      {/* Summary */}
+      <div className="customers-summary">
+        <div className="customer-stat">
+          <span className="customer-stat-value">5</span>
+          <span className="customer-stat-label">Total Customers</span>
+        </div>
+        <div className="customer-stat">
+          <span className="customer-stat-value">4</span>
+          <span className="customer-stat-label">Active</span>
+        </div>
+        <div className="customer-stat">
+          <span className="customer-stat-value">1</span>
+          <span className="customer-stat-label">Inactive</span>
+        </div>
+        <div className="customer-stat">
+          <span className="customer-stat-value">{formatCurrency(3178.44)}</span>
+          <span className="customer-stat-label">Total Revenue</span>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Sales</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+      {/* Filters */}
+      <div className="customers-filters">
+        <div className="customers-search">
+          <Search size={18} className="customers-search-icon" />
+          <input
+            type="text"
+            placeholder="Search customers..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="customers-search-input"
+          />
+        </div>
+        <div className="customers-filter-group">
+          <button className="customers-filter-btn">
+            <Filter size={16} />
+            Status
+            <ChevronDown size={14} />
+          </button>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="customers-table-wrapper">
+        <table className="customers-table">
+          <thead>
+            <tr>
+              <th>Customer</th>
+              <th>Contact</th>
+              <th>Total Spent</th>
+              <th>Orders</th>
+              <th>Joined</th>
+              <th>Status</th>
+              <th className="table-actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {customers.map((customer) => (
+              <tr key={customer.id}>
+                <td>
+                  <div className="customer-cell">
+                    <div className="customer-avatar">
+                      {customer.name.charAt(0)}
+                    </div>
+                    <span className="customer-name">{customer.name}</span>
+                  </div>
+                </td>
+                <td>
+                  <div className="customer-contact">
+                    <Mail size={14} />
+                    <span>{customer.email}</span>
+                  </div>
+                  <div className="customer-contact">
+                    <Phone size={14} />
+                    <span>{customer.phone}</span>
+                  </div>
+                </td>
+                <td className="customer-spent">{formatCurrency(customer.totalSpent)}</td>
+                <td className="customer-orders">{customer.orders}</td>
+                <td className="customer-joined">{customer.joined}</td>
+                <td>
+                  <span className={`customer-status ${customer.status}`}>
+                    {customer.status}
+                  </span>
+                </td>
+                <td className="table-actions">
+                  <button className="action-btn view">
+                    <MoreHorizontal size={16} />
+                  </button>
+                </td>
               </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredCustomers.length === 0 ? (
-                <tr>
-                  <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
-                    {searchTerm ? 'No customers match your search' : 'No customers found. Add your first customer!'}
-                  </td>
-                </tr>
-              ) : (
-                filteredCustomers.map((customer) => (
-                  <tr key={customer.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {customer.name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {customer.email || '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {customer.phone || '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {customer.total_sales || 0}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      <Button variant="outline" size="sm" onClick={() => handleEditCustomer(customer)}>Edit</Button>
-                      <Button variant="danger" size="sm" className="ml-2" onClick={() => handleDelete(customer.id)}>Delete</Button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
       </div>
 
-      <CustomerModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSave={handleSaveCustomer}
-        customer={selectedCustomer}
-      />
+      {/* Stats */}
+      <div className="customers-stats">
+        <span className="customers-stats-text">
+          Showing {customers.length} customers · Currency: {currency}
+        </span>
+      </div>
+
+      {/* Footer */}
+      <footer className="customers-footer">
+        <div className="customers-footer-content">
+          <span className="customers-footer-text">© 2026 Fezher Supreme · Customer Management</span>
+          <span className="customers-footer-currency">Currency: {currency}</span>
+          <div className="customers-footer-links">
+            <a href="#">Privacy</a>
+            <a href="#">Terms</a>
+            <a href="#">Support</a>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }

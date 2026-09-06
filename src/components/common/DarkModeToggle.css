@@ -1,0 +1,59 @@
+.dark-mode-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toggle-track {
+  width: 44px;
+  height: 24px;
+  border-radius: 12px;
+  padding: 2px;
+  transition: background-color 0.3s ease;
+  position: relative;
+}
+
+.toggle-track.light {
+  background: #e5e7eb;
+}
+
+.toggle-track.dark {
+  background: #4b5563;
+}
+
+.toggle-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease;
+  position: absolute;
+  top: 2px;
+}
+
+.toggle-thumb.light {
+  background: white;
+  transform: translateX(0);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.toggle-thumb.dark {
+  background: #1f2937;
+  transform: translateX(20px);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.toggle-icon {
+  color: #6b7280;
+  transition: color 0.3s ease;
+}
+
+.toggle-thumb.dark .toggle-icon {
+  color: #fbbf24;
+}

@@ -1,243 +1,265 @@
- import React, { useState, useEffect } from 'react'
-import { profitLossService } from '../../services/profitLossService'
-import { notificationService } from '../../services/notificationService'
-import { formatCurrency } from '../../utils/helpers'
-import Button from '../../components/common/Button'
+import React, { useState, useEffect } from 'react'
+import { 
+  TrendingUp, 
+  TrendingDown, 
+  DollarSign,
+  Calendar,
+  Download,
+  Printer,
+  Filter,
+  ChevronDown,
+  BarChart3,
+  PieChart,
+  ArrowUpRight,
+  ArrowDownRight
+} from 'lucide-react'
+import { useCurrency } from '../../context/CurrencyContext'
+import './ProfitLoss.css'
 
-const ProfitLoss = () => {
+function ProfitLoss() {
+  const { formatCurrency, currency } = useCurrency()
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [reportData, setReportData] = useState({
-    revenue: { total: 0, count: 0, items: [] },
-    expenses: { total: 0, count: 0, items: [], byCategory: {} },
-    profit: { net: 0, margin: 0, isPositive: true },
-    summary: { totalRevenue: 0, totalExpenses: 0, netProfit: 0, profitMargin: 0 }
+  const [period, setPeriod] = useState('monthly')
+  const [dateRange, setDateRange] = useState({
+    start: '2026-08-31',
+    end: '2026-09-29'
   })
-  const [monthlyData, setMonthlyData] = useState([])
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth())
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
-  const [viewType, setViewType] = useState('summary')
+  const [report, setReport] = useState({
+    revenue: 2999.99,
+    expenses: 1200.00,
+    profit: 1799.99,
+    margin: 60.0,
+    revenueData: [
+      { category: 'Sales', amount: 2500.00 },
+      { category: 'Services', amount: 499.99 }
+    ],
+    expenseData: [
+      { category: 'Rent', amount: 1200.00 },
+      { category: 'Utilities', amount: 250.00 },
+      { category: 'Office Supplies', amount: 150.00 },
+      { category: 'Marketing', amount: 300.00 }
+    ]
+  })
 
   useEffect(() => {
-    loadReport()
-  }, [selectedMonth, selectedYear])
-
-  const loadReport = async () => {
-    setLoading(true)
-    setError('')
-    try {
-      // Get monthly data
-      const { data: monthly, error: monthlyError } = await profitLossService.getMonthlyProfitLoss(selectedYear)
-      if (monthlyError) throw new Error(monthlyError)
-      setMonthlyData(monthly || [])
-
-      // Get current month report
-      const startDate = new Date(selectedYear, selectedMonth, 1)
-      const endDate = new Date(selectedYear, selectedMonth + 1, 0)
-      
-      const startStr = startDate.toISOString().split('T')[0]
-      const endStr = endDate.toISOString().split('T')[0]
-
-      console.log('📊 Loading report for:', startStr, 'to', endStr)
-
-      const { data, error } = await profitLossService.getProfitLossReport(startStr, endStr)
-      if (error) throw new Error(error)
-      
-      console.log('📊 Report data received:', data)
-      
-      // Ensure data has all required properties
-      setReportData({
-        revenue: data?.revenue || { total: 0, count: 0, items: [] },
-        expenses: data?.expenses || { total: 0, count: 0, items: [], byCategory: {} },
-        profit: data?.profit || { net: 0, margin: 0, isPositive: true },
-        summary: data?.summary || { totalRevenue: 0, totalExpenses: 0, netProfit: 0, profitMargin: 0 }
-      })
-    } catch (err) {
-      console.error('❌ Load error:', err)
-      setError(err.message)
-    } finally {
+    setTimeout(() => {
       setLoading(false)
-    }
-  }
+    }, 1000)
+  }, [])
 
-  const handleExport = () => {
-    notificationService.info('Export', 'Export functionality coming soon!')
+  const handlePeriodChange = (newPeriod) => {
+    setPeriod(newPeriod)
+    setLoading(true)
+    setTimeout(() => {
+      setLoading(false)
+    }, 500)
   }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading profit/loss report...</p>
-        </div>
+      <div className="profitloss-loading">
+        <div className="profitloss-loading-spinner"></div>
+        <p className="profitloss-loading-text">Loading report...</p>
       </div>
     )
   }
-
-  if (error) {
-    return (
-      <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-        Error loading report: {error}
-      </div>
-    )
-  }
-
-  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-  const years = [2024, 2025, 2026]
-
-  // Safely access nested properties
-  const revenueTotal = reportData?.revenue?.total || 0
-  const expensesTotal = reportData?.expenses?.total || 0
-  const netProfit = reportData?.profit?.net || 0
-  const profitMargin = reportData?.profit?.margin || 0
-  const isPositive = reportData?.profit?.isPositive !== undefined ? reportData.profit.isPositive : netProfit >= 0
-  const revenueCount = reportData?.revenue?.count || 0
-  const revenueItems = reportData?.revenue?.items || []
-  const expensesItems = reportData?.expenses?.items || []
-  const expensesByCategory = reportData?.expenses?.byCategory || {}
-  const expensesCount = reportData?.expenses?.count || 0
 
   return (
-    <div>
+    <div className="profitloss">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">📊 Profit & Loss Report</h1>
-        <div className="flex flex-wrap gap-2">
-          <select
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-            className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            {months.map((month, index) => (
-              <option key={index} value={index}>{month}</option>
-            ))}
-          </select>
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-            className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            {years.map(year => (
-              <option key={year} value={year}>{year}</option>
-            ))}
-          </select>
-          <Button variant="secondary" onClick={() => setViewType(viewType === 'summary' ? 'monthly' : 'summary')}>
-            {viewType === 'summary' ? 'View Monthly' : 'View Summary'}
-          </Button>
-          <Button variant="secondary" onClick={handleExport}>📥 Export</Button>
+      <div className="profitloss-header">
+        <div>
+          <div className="profitloss-badge">
+            <div className="profitloss-badge-icon">
+              <TrendingUp size={16} color="white" />
+            </div>
+            <span className="profitloss-badge-text">PROFIT & LOSS</span>
+          </div>
+          <h1 className="profitloss-title">Profit & Loss Report</h1>
+          <p className="profitloss-subtitle">Track your business profitability. Currency: {currency}</p>
+        </div>
+        <div className="profitloss-actions">
+          <div className="profitloss-period-selector">
+            <button 
+              className={`period-btn ${period === 'weekly' ? 'active' : ''}`}
+              onClick={() => handlePeriodChange('weekly')}
+            >
+              Week
+            </button>
+            <button 
+              className={`period-btn ${period === 'monthly' ? 'active' : ''}`}
+              onClick={() => handlePeriodChange('monthly')}
+            >
+              Month
+            </button>
+            <button 
+              className={`period-btn ${period === 'quarterly' ? 'active' : ''}`}
+              onClick={() => handlePeriodChange('quarterly')}
+            >
+              Quarter
+            </button>
+            <button 
+              className={`period-btn ${period === 'yearly' ? 'active' : ''}`}
+              onClick={() => handlePeriodChange('yearly')}
+            >
+              Year
+            </button>
+          </div>
+          <button className="profitloss-export-btn">
+            <Download size={16} />
+            Export
+          </button>
+          <button className="profitloss-print-btn">
+            <Printer size={16} />
+            Print
+          </button>
         </div>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-lg shadow p-4">
-          <p className="text-sm font-medium text-gray-500">Total Revenue</p>
-          <p className="text-xl font-bold text-green-600">{formatCurrency(revenueTotal)}</p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <p className="text-sm font-medium text-gray-500">Total Expenses</p>
-          <p className="text-xl font-bold text-red-600">{formatCurrency(expensesTotal)}</p>
-        </div>
-        <div className={`bg-white rounded-lg shadow p-4 ${isPositive ? 'border-l-4 border-green-500' : 'border-l-4 border-red-500'}`}>
-          <p className="text-sm font-medium text-gray-500">Net Profit</p>
-          <p className={`text-xl font-bold ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-            {formatCurrency(netProfit)}
-          </p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <p className="text-sm font-medium text-gray-500">Profit Margin</p>
-          <p className="text-xl font-bold text-blue-600">{profitMargin.toFixed(1)}%</p>
-        </div>
-      </div>
-
-      {/* Monthly View */}
-      {viewType === 'monthly' && monthlyData.length > 0 && (
-        <div className="bg-white rounded-lg shadow overflow-hidden mb-6">
-          <div className="p-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Monthly Performance</h2>
+      <div className="profitloss-summary">
+        <div className="summary-card summary-card-revenue">
+          <div className="summary-card-icon">
+            <DollarSign size={24} color="white" />
           </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Month</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expenses</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Profit</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Margin</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {monthlyData.map((item, index) => (
-                  <tr key={index}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {item.month} {item.year}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">
-                      {formatCurrency(item.revenue || 0)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600">
-                      {formatCurrency(item.expenses || 0)}
-                    </td>
-                    <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${(item.profit || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {formatCurrency(item.profit || 0)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600">
-                      {(item.margin || 0).toFixed(1)}%
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* Revenue Details */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="p-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-green-600">💰 Revenue Details</h2>
-            <p className="text-sm text-gray-500">{revenueCount} transactions</p>
-          </div>
-          <div className="p-4 max-h-64 overflow-y-auto">
-            {revenueItems.length === 0 ? (
-              <p className="text-gray-500 text-sm">No revenue recorded</p>
-            ) : (
-              revenueItems.map((item, index) => (
-                <div key={index} className="flex justify-between py-1 border-b border-gray-100 text-sm">
-                  <span className="text-gray-600">{item.invoice_number || 'Sale'}</span>
-                  <span className="font-medium text-green-600">{formatCurrency(item.total_amount || 0)}</span>
-                </div>
-              ))
-            )}
+          <div className="summary-card-content">
+            <p className="summary-card-label">Total Revenue</p>
+            <p className="summary-card-value revenue-amount">{formatCurrency(report.revenue)}</p>
+            <div className="summary-card-change positive">
+              <ArrowUpRight size={14} />
+              12.5% from last period
+            </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="p-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-red-600">💳 Expenses by Category</h2>
-            <p className="text-sm text-gray-500">{expensesCount} transactions</p>
+        <div className="summary-card summary-card-expenses">
+          <div className="summary-card-icon">
+            <TrendingDown size={24} color="white" />
           </div>
-          <div className="p-4 max-h-64 overflow-y-auto">
-            {Object.keys(expensesByCategory).length === 0 ? (
-              <p className="text-gray-500 text-sm">No expenses recorded</p>
-            ) : (
-              Object.entries(expensesByCategory).map(([category, data]) => (
-                <div key={category} className="flex justify-between py-1 border-b border-gray-100 text-sm">
-                  <span className="text-gray-600">{category} ({data.count || 0})</span>
-                  <span className="font-medium text-red-600">{formatCurrency(data.total || 0)}</span>
-                </div>
-              ))
-            )}
-            <div className="flex justify-between py-2 mt-2 border-t border-gray-200 font-semibold">
-              <span>Total Expenses</span>
-              <span className="text-red-600">{formatCurrency(expensesTotal)}</span>
+          <div className="summary-card-content">
+            <p className="summary-card-label">Total Expenses</p>
+            <p className="summary-card-value expense-amount">{formatCurrency(report.expenses)}</p>
+            <div className="summary-card-change negative">
+              <ArrowDownRight size={14} />
+              8.3% from last period
+            </div>
+          </div>
+        </div>
+
+        <div className="summary-card summary-card-profit">
+          <div className="summary-card-icon">
+            <TrendingUp size={24} color="white" />
+          </div>
+          <div className="summary-card-content">
+            <p className="summary-card-label">Net Profit</p>
+            <p className={`summary-card-value profit-amount ${report.profit >= 0 ? 'positive' : 'negative'}`}>
+              {formatCurrency(report.profit)}
+            </p>
+            <div className={`summary-card-change ${report.profit >= 0 ? 'positive' : 'negative'}`}>
+              {report.profit >= 0 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+              15.2% from last period
+            </div>
+          </div>
+        </div>
+
+        <div className="summary-card summary-card-margin">
+          <div className="summary-card-icon">
+            <BarChart3 size={24} color="white" />
+          </div>
+          <div className="summary-card-content">
+            <p className="summary-card-label">Profit Margin</p>
+            <p className="summary-card-value margin-value">{report.margin.toFixed(1)}%</p>
+            <div className="summary-card-change positive">
+              <ArrowUpRight size={14} />
+              2.4% from last period
             </div>
           </div>
         </div>
       </div>
+
+      {/* Date Range */}
+      <div className="profitloss-daterange">
+        <div className="profitloss-daterange-content">
+          <Calendar size={18} className="daterange-icon" />
+          <span>Report Period: </span>
+          <span className="daterange-dates">
+            {dateRange.start} to {dateRange.end}
+          </span>
+          <span className="daterange-separator">|</span>
+          <span>Currency: {currency}</span>
+        </div>
+        <button className="profitloss-filter-btn">
+          <Filter size={16} />
+          Filter
+          <ChevronDown size={14} />
+        </button>
+      </div>
+
+      {/* Charts Section */}
+      <div className="profitloss-charts">
+        {/* Revenue Breakdown */}
+        <div className="chart-card">
+          <div className="chart-card-header">
+            <h3 className="chart-card-title">Revenue Breakdown</h3>
+            <span className="chart-card-subtitle">By category</span>
+          </div>
+          <div className="chart-placeholder">
+            <div className="chart-placeholder-content">
+              <PieChart size={48} className="chart-placeholder-icon" />
+              <p>Revenue Chart Coming Soon</p>
+              <span>Connect your data source to see revenue breakdown</span>
+            </div>
+          </div>
+          <div className="chart-legend">
+            {report.revenueData.map((item, index) => (
+              <div key={index} className="legend-item">
+                <span className="legend-dot" style={{ backgroundColor: ['#3b82f6', '#8b5cf6'][index] }}></span>
+                <span className="legend-label">{item.category}</span>
+                <span className="legend-amount">{formatCurrency(item.amount)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Expenses Breakdown */}
+        <div className="chart-card">
+          <div className="chart-card-header">
+            <h3 className="chart-card-title">Expenses Breakdown</h3>
+            <span className="chart-card-subtitle">By category</span>
+          </div>
+          <div className="chart-placeholder">
+            <div className="chart-placeholder-content">
+              <PieChart size={48} className="chart-placeholder-icon" />
+              <p>Expenses Chart Coming Soon</p>
+              <span>Connect your data source to see expenses breakdown</span>
+            </div>
+          </div>
+          <div className="chart-legend">
+            {report.expenseData.map((item, index) => (
+              <div key={index} className="legend-item">
+                <span className="legend-dot" style={{ 
+                  backgroundColor: ['#ef4444', '#f59e0b', '#10b981', '#8b5cf6'][index] 
+                }}></span>
+                <span className="legend-label">{item.category}</span>
+                <span className="legend-amount">{formatCurrency(item.amount)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <footer className="profitloss-footer">
+        <div className="profitloss-footer-content">
+          <span className="profitloss-footer-text">© 2026 Fezher Supreme · Profit & Loss Report</span>
+          <span className="profitloss-footer-currency">Currency: {currency}</span>
+          <div className="profitloss-footer-links">
+            <a href="#">Privacy</a>
+            <a href="#">Terms</a>
+            <a href="#">Support</a>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }

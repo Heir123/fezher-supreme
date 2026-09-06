@@ -1,118 +1,191 @@
- import React, { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import React, { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import Button from '../components/common/Button'
+import './Login.css'
 
-const Login = () => {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+function Login() {
+  const navigate = useNavigate()
+  const { login } = useAuth()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const { login } = useAuth()
-  const navigate = useNavigate()
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    organization: '',
+    remember: false
+  })
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setError('')
     setLoading(true)
+    setError('')
 
     try {
-      await login(email, password)
-      navigate('/')
+      // First get the organization by slug
+      const orgResponse = await fetch(`http://localhost:3000/api/organizations/slug/${formData.organization}`)
+      if (!orgResponse.ok) {
+        setError('Organization not found. Please check your organization slug.')
+        setLoading(false)
+        return
+      }
+      const org = await orgResponse.json()
+
+      // Then login with the organization ID
+      const result = await login(formData.email, formData.password, org.id)
+      if (result.success) {
+        navigate('/dashboard')
+      } else {
+        setError(result.error || 'Login failed. Please try again.')
+        setLoading(false)
+      }
     } catch (err) {
-      setError(err.message || 'Login failed. Please check your credentials.')
-    } finally {
+      setError('An error occurred. Please try again.')
       setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Sign in to BizFlow
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Enter your credentials to access the dashboard
-          </p>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Or{' '}
-            <Link to="/signup" className="font-medium text-blue-600 hover:text-blue-500">
-              create a new account
-            </Link>
-          </p>
+    <div className="login-container">
+      <div className="login-left">
+        <div className="login-brand">
+          <div className="login-brand-icon">◆</div>
+          <span className="login-brand-name">
+            Fezher <span className="login-brand-highlight">Supreme</span>
+          </span>
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-              {error}
-            </div>
-          )}
-          <div className="rounded-md shadow-sm -space-y-px">
-            <div>
-              <label htmlFor="email" className="sr-only">Email address</label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Email address"
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="sr-only">Password</label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Password"
-              />
-            </div>
+
+        <div className="login-welcome">
+          <h1 className="login-title">Welcome back</h1>
+          <p className="login-subtitle">Sign in to your account to continue</p>
+        </div>
+
+        {error && (
+          <div className="login-error">
+            <span>⚠️</span> {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit}>
+          <div className="login-form-group">
+            <label className="login-label">Organization Slug</label>
+            <input
+              type="text"
+              className="login-input"
+              value={formData.organization}
+              onChange={(e) => setFormData({...formData, organization: e.target.value.toLowerCase().replace(/\s/g, '-')})}
+              placeholder="techstart"
+              required
+            />
+            <small className="login-hint">Enter your organization slug</small>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
+          <div className="login-form-group">
+            <label className="login-label">Email Address</label>
+            <input
+              type="email"
+              className="login-input"
+              value={formData.email}
+              onChange={(e) => setFormData({...formData, email: e.target.value})}
+              placeholder="you@example.com"
+              required
+            />
+          </div>
+
+          <div className="login-form-group">
+            <label className="login-label">Password</label>
+            <input
+              type="password"
+              className="login-input"
+              value={formData.password}
+              onChange={(e) => setFormData({...formData, password: e.target.value})}
+              placeholder="•••••••••"
+              required
+            />
+          </div>
+
+          <div className="login-remember-container">
+            <label className="login-checkbox-wrapper">
               <input
-                id="remember-me"
-                name="remember-me"
                 type="checkbox"
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                className="login-checkbox"
+                checked={formData.remember}
+                onChange={(e) => setFormData({...formData, remember: e.target.checked})}
               />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
-                Remember me
-              </label>
-            </div>
-
-            <div className="text-sm">
-              <a href="#" className="font-medium text-blue-600 hover:text-blue-500">
-                Forgot your password?
-              </a>
-            </div>
+              <span className="login-remember-text">Remember me</span>
+            </label>
+            <Link to="/forgot-password" className="login-forgot-link">
+              Forgot password?
+            </Link>
           </div>
 
-          <div>
-            <Button
-              type="submit"
-              variant="primary"
-              size="lg"
-              className="w-full"
-              loading={loading}
-              disabled={loading}
-            >
-              Sign in
-            </Button>
-          </div>
+          <button
+            type="submit"
+            className="login-signin-btn"
+            disabled={loading}
+          >
+            {loading ? 'Signing in...' : 'Sign In →'}
+          </button>
         </form>
+
+        <div className="login-signup-container">
+          <span className="login-signup-text">
+            Don't have an account?{' '}
+            <Link to="/signup" className="login-signup-link">
+              Sign up
+            </Link>
+          </span>
+        </div>
+
+        <div className="login-footer-features">
+          <span className="login-footer-feature">🔒 Secure & encrypted</span>
+          <span className="login-footer-feature">⚡ Fast performance</span>
+          <span className="login-footer-feature">✅ 24/7 support</span>
+        </div>
+      </div>
+
+      <div className="login-right">
+        <div className="login-right-decoration"></div>
+        <div className="login-right-decoration2"></div>
+        <div className="login-right-decoration3"></div>
+
+        <div className="login-right-content">
+          <div className="login-right-badge">
+            <span>✦</span>
+            Fezher Supreme Management Platform
+          </div>
+
+          <h2 className="login-right-title">
+            Smarter business<br />management
+          </h2>
+
+          <p className="login-right-description">
+            Streamline your operations, gain valuable insights, and make 
+            data-driven decisions with our comprehensive management platform.
+          </p>
+
+          <div className="login-right-stats">
+            <div className="login-right-stat">
+              <span className="login-right-stat-value">99.9%</span>
+              <span className="login-right-stat-label">Uptime</span>
+            </div>
+            <div className="login-right-stat">
+              <span className="login-right-stat-value">24/7</span>
+              <span className="login-right-stat-label">Support</span>
+            </div>
+            <div className="login-right-stat">
+              <span className="login-right-stat-value">Secure</span>
+              <span className="login-right-stat-label">Encrypted</span>
+            </div>
+          </div>
+
+          <hr className="login-right-divider" />
+
+          <div className="login-right-footer">
+            <span className="login-right-footer-item">🔒 Enterprise-grade security</span>
+            <span className="login-right-footer-item">⚡ GDPR compliant</span>
+            <span className="login-right-footer-item">✅ Multi-tenant support</span>
+          </div>
+        </div>
       </div>
     </div>
   )

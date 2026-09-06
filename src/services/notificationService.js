@@ -1,131 +1,120 @@
-import { toast } from 'sonner'
+// Notification service for the app
+class NotificationService {
+  constructor() {
+    this.notifications = []
+    this.listeners = []
+    this.counter = 0
+  }
 
-export const notificationService = {
-  // Success messages
-  success: (message, description = '') => {
-    toast.success(message, {
-      description: description,
-      duration: 4000,
-    })
-  },
-
-  // Error messages
-  error: (message, description = '') => {
-    toast.error(message, {
-      description: description,
-      duration: 5000,
-    })
-  },
-
-  // Info messages
-  info: (message, description = '') => {
-    toast.info(message, {
-      description: description,
-      duration: 3000,
-    })
-  },
-
-  // Warning messages
-  warning: (message, description = '') => {
-    toast.warning(message, {
-      description: description,
-      duration: 4000,
-    })
-  },
-
-  // Loading messages
-  loading: (message) => {
-    return toast.loading(message)
-  },
-
-  // Dismiss toast
-  dismiss: (id) => {
-    toast.dismiss(id)
-  },
-
-  // Promise wrapper
-  promise: (promise, messages) => {
-    return toast.promise(promise, {
-      loading: messages.loading || 'Processing...',
-      success: messages.success || 'Success!',
-      error: messages.error || 'Something went wrong',
-    })
-  },
-
-  // Low stock alert
-  lowStockAlert: (productName, stock) => {
-    toast.warning(`⚠️ Low Stock Alert: ${productName}`, {
-      description: `Only ${stock} units remaining. Please restock soon.`,
-      duration: 10000,
-    })
-  },
-
-  // Multiple low stock alerts
-  lowStockAlerts: (products) => {
-    if (products.length === 0) return
-    
-    if (products.length === 1) {
-      notificationService.lowStockAlert(products[0].name, products[0].stock)
-    } else {
-      toast.warning(`⚠️ Low Stock Alert`, {
-        description: `${products.length} products need restocking. Check inventory.`,
-        duration: 10000,
-      })
-      products.forEach(product => {
-        setTimeout(() => {
-          toast.warning(`${product.name} - Only ${product.stock} units left`, {
-            duration: 8000,
-          })
-        }, 1000)
-      })
+  // Add a notification
+  addNotification(notification) {
+    const newNotification = {
+      id: ++this.counter,
+      ...notification,
+      read: false,
+      timestamp: new Date().toISOString()
     }
-  },
+    this.notifications.unshift(newNotification)
+    this.notifyListeners()
+    return newNotification
+  }
 
-  // Sale created
-  saleCreated: (invoiceNumber) => {
-    toast.success(`✅ Sale Created`, {
-      description: `Invoice ${invoiceNumber} has been created successfully.`,
-      duration: 4000,
-    })
-  },
-
-  // Product added
-  productAdded: (productName) => {
-    toast.success(`✅ Product Added`, {
-      description: `${productName} has been added to inventory.`,
-      duration: 4000,
-    })
-  },
-
-  // Product updated
-  productUpdated: (productName) => {
-    toast.success(`✅ Product Updated`, {
-      description: `${productName} has been updated successfully.`,
-      duration: 4000,
-    })
-  },
-
-  // Product deleted
-  productDeleted: (productName) => {
-    toast.success(`✅ Product Deleted`, {
-      description: `${productName} has been removed from inventory.`,
-      duration: 4000,
-    })
-  },
-
-  // Sale updated
-  saleUpdated: (invoiceNumber) => {
-    toast.success(`✅ Sale Updated`, {
-      description: `Invoice ${invoiceNumber} has been updated successfully.`,
-      duration: 4000,
-    })
-  },
-
-  // Sale deleted
-  saleDeleted: (invoiceNumber) => {
-    toast.success(`✅ Sale Deleted`, {
-      description: `Invoice ${invoiceNumber} has been deleted.`,
-      duration: 4000,
+  // Success notification
+  success(title, message, duration = 5000) {
+    return this.addNotification({
+      type: 'success',
+      title,
+      message,
+      duration,
+      icon: '✅'
     })
   }
+
+  // Error notification
+  error(title, message, duration = 6000) {
+    return this.addNotification({
+      type: 'error',
+      title,
+      message,
+      duration,
+      icon: '❌'
+    })
+  }
+
+  // Warning notification
+  warning(title, message, duration = 5000) {
+    return this.addNotification({
+      type: 'warning',
+      title,
+      message,
+      duration,
+      icon: '⚠️'
+    })
+  }
+
+  // Info notification
+  info(title, message, duration = 4000) {
+    return this.addNotification({
+      type: 'info',
+      title,
+      message,
+      duration,
+      icon: 'ℹ️'
+    })
+  }
+
+  // Mark as read
+  markAsRead(id) {
+    const notification = this.notifications.find(n => n.id === id)
+    if (notification) {
+      notification.read = true
+      this.notifyListeners()
+    }
+  }
+
+  // Mark all as read
+  markAllAsRead() {
+    this.notifications.forEach(n => n.read = true)
+    this.notifyListeners()
+  }
+
+  // Remove notification
+  removeNotification(id) {
+    this.notifications = this.notifications.filter(n => n.id !== id)
+    this.notifyListeners()
+  }
+
+  // Clear all
+  clearAll() {
+    this.notifications = []
+    this.notifyListeners()
+  }
+
+  // Get unread count
+  getUnreadCount() {
+    return this.notifications.filter(n => !n.read).length
+  }
+
+  // Get all notifications
+  getAll() {
+    return this.notifications
+  }
+
+  // Subscribe to changes
+  subscribe(listener) {
+    this.listeners.push(listener)
+    return () => {
+      this.listeners = this.listeners.filter(l => l !== listener)
+    }
+  }
+
+  // Notify all listeners
+  notifyListeners() {
+    this.listeners.forEach(listener => listener(this.notifications))
+  }
 }
+
+// Create singleton instance
+export const notificationService = new NotificationService()
+
+export default notificationService

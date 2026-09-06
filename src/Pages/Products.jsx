@@ -1,236 +1,304 @@
-import React, { useState, useEffect } from 'react'
-import * as ProductService from '../services/productService'
-import { notificationService } from '../services/notificationService'
-import Button from '../components/common/Button'
-import ProductModal from '../components/products/ProductModal'
-import RoleBasedAccess from '../components/common/RoleBasedAccess'
-import { useAuth } from '../context/AuthContext'
-import { formatCurrency } from '../utils/helpers'
+ import React, { useState, useEffect } from 'react'
+import { 
+  Plus, 
+  Search, 
+  Edit, 
+  Trash2, 
+  Package, 
+  DollarSign,
+  Filter,
+  ChevronDown,
+  MoreHorizontal,
+  X,
+  Check,
+  AlertCircle
+} from 'lucide-react'
+import { useCurrency } from '../context/CurrencyContext'
+import './Products.css'
 
-const Products = () => {
-  const { isAdmin, isManager } = useAuth()
+function Products() {
+  const { formatCurrency, currency } = useCurrency()
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
-  const [selectedProduct, setSelectedProduct] = useState(null)
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [modalTitle, setModalTitle] = useState('Add Product')
+  const [showModal, setShowModal] = useState(false)
+  const [editingProduct, setEditingProduct] = useState(null)
+  const [formData, setFormData] = useState({
+    name: '',
+    category: '',
+    price: '',
+    stock: '',
+    description: ''
+  })
 
   useEffect(() => {
-    loadProducts()
+    // Simulate API call
+    setTimeout(() => {
+      setProducts([
+        { id: 1, name: 'Widget Pro', category: 'Electronics', price: 299.99, stock: 45, description: 'High-performance widget' },
+        { id: 2, name: 'Gadget X', category: 'Accessories', price: 49.99, stock: 120, description: 'Essential gadget' },
+        { id: 3, name: 'Tool Master', category: 'Tools', price: 149.99, stock: 8, description: 'Professional tool set' },
+        { id: 4, name: 'Smart Hub', category: 'Electronics', price: 89.99, stock: 32, description: 'Smart home hub' }
+      ])
+      setLoading(false)
+    }, 1000)
   }, [])
 
-  const loadProducts = async () => {
-    setLoading(true)
-    setError('')
-    try {
-      const { data, error } = await ProductService.getProducts()
-      if (error) throw new Error(error)
-      setProducts(data || [])
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    if (editingProduct) {
+      setProducts(products.map(p => 
+        p.id === editingProduct.id ? { ...p, ...formData, price: parseFloat(formData.price), stock: parseInt(formData.stock) } : p
+      ))
+    } else {
+      setProducts([...products, {
+        ...formData,
+        id: Date.now(),
+        price: parseFloat(formData.price),
+        stock: parseInt(formData.stock)
+      }])
     }
+    setShowModal(false)
+    setEditingProduct(null)
+    setFormData({ name: '', category: '', price: '', stock: '', description: '' })
   }
 
-  const handleAddProduct = () => {
-    setSelectedProduct(null)
-    setModalTitle('Add Product')
-    setIsModalOpen(true)
+  const handleEdit = (product) => {
+    setEditingProduct(product)
+    setFormData({
+      name: product.name,
+      category: product.category,
+      price: product.price.toString(),
+      stock: product.stock.toString(),
+      description: product.description
+    })
+    setShowModal(true)
   }
 
-  const handleEditProduct = (product) => {
-    setSelectedProduct(product)
-    setModalTitle('Edit Product')
-    setIsModalOpen(true)
-  }
-
-  const handleSaveProduct = async (productData) => {
-    try {
-      if (selectedProduct) {
-        const { data, error } = await ProductService.updateProduct(selectedProduct.id, productData)
-        if (error) throw new Error(error)
-        setProducts(products.map(p => p.id === data.id ? data : p))
-        notificationService.productUpdated(productData.name)
-      } else {
-        const { data, error } = await ProductService.createProduct(productData)
-        if (error) throw new Error(error)
-        setProducts([data, ...products])
-        notificationService.productAdded(productData.name)
-      }
-    } catch (err) {
-      notificationService.error('Failed to save product', err.message)
-    }
-  }
-
-  const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to delete this product?')) return
-    try {
-      const product = products.find(p => p.id === id)
-      const { error } = await ProductService.deleteProduct(id)
-      if (error) throw new Error(error)
+  const handleDelete = (id) => {
+    if (confirm('Are you sure you want to delete this product?')) {
       setProducts(products.filter(p => p.id !== id))
-      notificationService.productDeleted(product?.name || 'Product')
-    } catch (err) {
-      notificationService.error('Failed to delete product', err.message)
     }
   }
 
-  const filteredProducts = products.filter(product =>
-    product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (product.category && product.category.toLowerCase().includes(searchTerm.toLowerCase()))
+  const filteredProducts = products.filter(p => 
+    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.category.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading products...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-        Error loading products: {error}
+      <div className="products-loading">
+        <div className="products-loading-spinner"></div>
+        <p className="products-loading-text">Loading products...</p>
       </div>
     )
   }
 
   return (
-    <div>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Products</h1>
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search products..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full sm:w-64 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10"
-            />
-            <svg className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
+    <div className="products">
+      {/* Header */}
+      <div className="products-header">
+        <div>
+          <div className="products-badge">
+            <div className="products-badge-icon">
+              <Package size={16} color="white" />
+            </div>
+            <span className="products-badge-text">PRODUCTS</span>
           </div>
-          <RoleBasedAccess managerOnly>
-            <Button variant="primary" onClick={handleAddProduct}>
-              Add Product
-            </Button>
-          </RoleBasedAccess>
-          <RoleBasedAccess adminOnly>
-            <Button variant="primary" onClick={handleAddProduct}>
-              Add Product
-            </Button>
-          </RoleBasedAccess>
-          {/* If user is staff, hide the Add Product button */}
-          {!isAdmin && !isManager && (
-            <Button variant="secondary" disabled className="opacity-50 cursor-not-allowed">
-              Add Product (Staff - View Only)
-            </Button>
-          )}
+          <h1 className="products-title">Products</h1>
+          <p className="products-subtitle">Manage your product inventory and catalog.</p>
+          <p className="products-currency-info">Currency: {currency}</p>
+        </div>
+        <button className="products-add-btn" onClick={() => { setEditingProduct(null); setFormData({ name: '', category: '', price: '', stock: '', description: '' }); setShowModal(true) }}>
+          <Plus size={16} />
+          Add Product
+        </button>
+      </div>
+
+      {/* Filters */}
+      <div className="products-filters">
+        <div className="products-search">
+          <Search size={18} className="products-search-icon" />
+          <input
+            type="text"
+            placeholder="Search products..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="products-search-input"
+          />
+        </div>
+        <div className="products-filter-group">
+          <button className="products-filter-btn">
+            <Filter size={16} />
+            Category
+            <ChevronDown size={14} />
+          </button>
+          <button className="products-filter-btn">
+            Sort By
+            <ChevronDown size={14} />
+          </button>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Category
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Price
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Stock
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
+      {/* Table */}
+      <div className="products-table-wrapper">
+        <table className="products-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Category</th>
+              <th>Price</th>
+              <th>Stock</th>
+              <th>Status</th>
+              <th className="table-actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredProducts.map((product) => (
+              <tr key={product.id}>
+                <td>
+                  <div className="product-cell">
+                    <div className="product-avatar">
+                      <Package size={18} />
+                    </div>
+                    <div>
+                      <span className="product-name">{product.name}</span>
+                      <span className="product-sku">SKU-{String(product.id).padStart(4, '0')}</span>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span className="product-category">{product.category}</span>
+                </td>
+                <td className="product-price">{formatCurrency(product.price)}</td>
+                <td>
+                  <span className={`product-stock ${product.stock < 10 ? 'low' : ''}`}>
+                    {product.stock}
+                  </span>
+                </td>
+                <td>
+                  <span className={`product-status ${product.stock > 0 ? 'in-stock' : 'out-of-stock'}`}>
+                    {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
+                  </span>
+                </td>
+                <td className="table-actions">
+                  <button className="action-btn edit" onClick={() => handleEdit(product)}>
+                    <Edit size={16} />
+                  </button>
+                  <button className="action-btn delete" onClick={() => handleDelete(product.id)}>
+                    <Trash2 size={16} />
+                  </button>
+                </td>
               </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredProducts.length === 0 ? (
-                <tr>
-                  <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
-                    {searchTerm ? 'No products match your search' : 'No products found. Add your first product!'}
-                  </td>
-                </tr>
-              ) : (
-                filteredProducts.map((product) => (
-                  <tr key={product.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {product.name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {product.category || product.brand || '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {formatCurrency(product.price || product.selling_price || 0)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      <span className={product.stock < 10 ? 'text-red-600 font-medium' : ''}>
-                        {product.stock || product.stock_quantity || 0}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      <div className="flex gap-1 flex-wrap">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => handleEditProduct(product)}
-                        >
-                          Edit
-                        </Button>
-                        <RoleBasedAccess adminOnly>
-                          <Button 
-                            variant="danger" 
-                            size="sm" 
-                            onClick={() => handleDelete(product.id)}
-                          >
-                            Delete
-                          </Button>
-                        </RoleBasedAccess>
-                        {/* If user is not admin, show disabled delete button */}
-                        {!isAdmin && (
-                          <Button 
-                            variant="danger" 
-                            size="sm" 
-                            disabled
-                            className="opacity-50 cursor-not-allowed"
-                            title="Only admins can delete products"
-                          >
-                            Delete
-                          </Button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Stats */}
+      <div className="products-stats">
+        <span className="products-stats-text">
+          Showing {filteredProducts.length} of {products.length} products
+        </span>
+        <div className="products-stats-details">
+          <span>In Stock: {products.filter(p => p.stock > 0).length}</span>
+          <span>Low Stock: {products.filter(p => p.stock > 0 && p.stock < 10).length}</span>
+          <span>Currency: {currency}</span>
         </div>
       </div>
 
-      <ProductModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSave={handleSaveProduct}
-        product={selectedProduct}
-        title={modalTitle}
-      />
+      {/* Modal */}
+      {showModal && (
+        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2 className="modal-title">
+                {editingProduct ? 'Edit Product' : 'Add New Product'}
+              </h2>
+              <button className="modal-close" onClick={() => setShowModal(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleSubmit} className="modal-form">
+              <div className="form-group">
+                <label className="form-label">Product Name</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  required
+                />
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">Category</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={formData.category}
+                    onChange={(e) => setFormData({...formData, category: e.target.value})}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Price ({currency})</label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    value={formData.price}
+                    onChange={(e) => setFormData({...formData, price: e.target.value})}
+                    step="0.01"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">Stock Quantity</label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    value={formData.stock}
+                    onChange={(e) => setFormData({...formData, stock: e.target.value})}
+                    required
+                  />
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Description</label>
+                <textarea
+                  className="form-textarea"
+                  value={formData.description}
+                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  rows={3}
+                />
+              </div>
+              <div className="modal-actions">
+                <button type="button" className="btn-cancel" onClick={() => setShowModal(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn-submit">
+                  {editingProduct ? 'Update Product' : 'Add Product'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Footer */}
+      <footer className="products-footer">
+        <div className="products-footer-content">
+          <span className="products-footer-text">© 2026 Fezher Supreme · Product Management</span>
+          <div className="products-footer-links">
+            <a href="#">Privacy</a>
+            <a href="#">Terms</a>
+            <a href="#">Support</a>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }
