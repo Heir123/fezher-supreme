@@ -1,10 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
-import { CurrencyProvider } from './context/CurrencyContext'
-import { ThemeProvider } from './context/ThemeContext'
-import { NotificationProvider } from './context/NotificationContext'
-import { SocketProvider } from './context/SocketContext'
 import ProtectedRoute from './components/common/ProtectedRoute'
 import WelcomeTour from './components/onboarding/WelcomeTour'
 import HelpCenter from './components/onboarding/HelpCenter'
@@ -55,51 +51,43 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <CurrencyProvider>
-          <ThemeProvider>
-            <NotificationProvider>
-              <SocketProvider>
-                <Routes>
-                  {/* Public Routes */}
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/signup" element={<Signup />} />
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
 
-                  {/* Protected Routes */}
-                  <Route path="/" element={
-                    <ProtectedRoute>
-                      <Layout />
-                    </ProtectedRoute>
-                  }>
-                    <Route index element={<Dashboard />} />
-                    <Route path="dashboard" element={<Dashboard />} />
-                    <Route path="analytics" element={<Analytics />} />
-                    <Route path="profit-loss" element={<ProfitLoss />} />
-                    <Route path="inventory" element={<Inventory />} />
-                    <Route path="products" element={<Products />} />
-                    <Route path="sales" element={<Sales />} />
-                    <Route path="expenses" element={<Expenses />} />
-                    <Route path="customers" element={<Customers />} />
-                    <Route path="users" element={<Users />} />
-                    <Route path="email-reports" element={<EmailReports />} />
-                    <Route path="bank-reconciliation" element={<BankReconciliation />} />
-                    <Route path="budget" element={<BudgetTracking />} />
-                    <Route path="cash-flow" element={<CashFlow />} />
-                    <Route path="feedback" element={<FeedbackAdmin />} />
-                    <Route path="settings" element={<Settings />} />
-                    <Route path="organizations" element={<Organizations />} />
-                  </Route>
-                </Routes>
+          {/* Protected Routes */}
+          <Route path="/" element={
+            <ProtectedRoute>
+              <Layout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<Dashboard />} />
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="analytics" element={<Analytics />} />
+            <Route path="profit-loss" element={<ProfitLoss />} />
+            <Route path="inventory" element={<Inventory />} />
+            <Route path="products" element={<Products />} />
+            <Route path="sales" element={<Sales />} />
+            <Route path="expenses" element={<Expenses />} />
+            <Route path="customers" element={<Customers />} />
+            <Route path="users" element={<Users />} />
+            <Route path="email-reports" element={<EmailReports />} />
+            <Route path="bank-reconciliation" element={<BankReconciliation />} />
+            <Route path="budget" element={<BudgetTracking />} />
+            <Route path="cash-flow" element={<CashFlow />} />
+            <Route path="feedback" element={<FeedbackAdmin />} />
+            <Route path="settings" element={<Settings />} />
+            <Route path="organizations" element={<Organizations />} />
+          </Route>
+        </Routes>
 
-                {/* Onboarding Components */}
-                <WelcomeTour 
-                  isFirstVisit={showTour} 
-                  onComplete={handleTourComplete} 
-                />
-                <HelpCenter onStartTour={handleStartTour} />
-              </SocketProvider>
-            </NotificationProvider>
-          </ThemeProvider>
-        </CurrencyProvider>
+        {/* Onboarding Components */}
+        <WelcomeTour 
+          isFirstVisit={showTour} 
+          onComplete={handleTourComplete} 
+        />
+        <HelpCenter onStartTour={handleStartTour} />
       </AuthProvider>
     </BrowserRouter>
   )
