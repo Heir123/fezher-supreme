@@ -1,9 +1,8 @@
 // src/lib/api.js
 
-// Single source of truth for the backend API
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://fezher-api.fietprojects.workers.dev';
+const API_BASE_URL = 'https://fezher-api.fietprojects.workers.dev';
 
-// Generic fetch wrapper to handle JSON responses and errors
+// Generic fetch wrapper
 const request = async (endpoint, options = {}) => {
   try {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -31,27 +30,17 @@ const request = async (endpoint, options = {}) => {
 
 // --- Auth Endpoints ---
 export const loginUser = async (email, password, organizationSlug) => {
-  return request('/api/auth/login', {  // <--- ADD THE /api HERE
+  return request('/api/auth/login', {
     method: 'POST',
     body: { email, password, organizationSlug },
   });
 };
 
 export const signupUser = async (email, password, organizationSlug) => {
-  return request('/api/auth/signup', {  // <--- ADD THE /api HERE
+  return request('/api/auth/signup', {
     method: 'POST',
     body: { email, password, organizationSlug },
   });
-};
-
-// --- Organization Endpoints ---
-export const checkOrganization = async (organizationSlug) => {
-  return request(`/api/organizations/slug/${organizationSlug}`); // <--- ADD THE /api HERE
-};
-
-// --- Data Endpoints (Add as you build more features) ---
-export const fetchDashboardData = async () => {
-  return request('/api/dashboard'); // <--- ADD THE /api HERE
 };
 
 export default request;
