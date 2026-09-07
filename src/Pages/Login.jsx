@@ -1,11 +1,10 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { supabase } from '../lib/supabaseClient' // We will create this file next
 import './Login.css'
 
 function Login() {
   const navigate = useNavigate()
-  const { login } = useAuth()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [formData, setFormData] = useState({
@@ -21,23 +20,39 @@ function Login() {
     setError('')
 
     try {
-      // First get the organization by slug
-      const orgResponse = await fetch(`http://localhost:3000/api/organizations/slug/${formData.organization}`)
-      if (!orgResponse.ok) {
-        setError('Organization not found. Please check your organization slug.')
+      // 1. Sign in with Supabase
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      })
+
+      if (authError) {
+        setError(authError.message)
         setLoading(false)
         return
       }
-      const org = await orgResponse.json()
 
-      // Then login with the organization ID
-      const result = await login(formData.email, formData.password, org.id)
-      if (result.success) {
-        navigate('/dashboard')
-      } else {
-        setError(result.error || 'Login failed. Please try again.')
+      // 2. Fetch the user's organization based on the slug
+      const { data: orgData, error: orgError } = await supabase
+        .from('organizations')
+        .select('*')
+        .eq('slug', formData.organization)
+        .single()
+
+      if (orgError || !orgData) {
+        setError('Organization not found. Please check your slug.')
+        await supabase.auth.signOut() // Log them out if org doesn't exist
         setLoading(false)
+        return
       }
+
+      // 3. Save user session and org info to local storage (Optional, for your app logic)
+      localStorage.setItem('org_slug', orgData.slug)
+      localStorage.setItem('org_id', orgData.id)
+
+      // 4. Navigate to Dashboard
+      navigate('/dashboard')
+      
     } catch (err) {
       setError('An error occurred. Please try again.')
       setLoading(false)
