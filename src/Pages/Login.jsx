@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { supabase } from '../lib/supabaseClient'
+import { useAuth } from '../context/AuthContext'
 import './Login.css'
 
 function Login() {
   const navigate = useNavigate()
+  const { login } = useAuth()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [formData, setFormData] = useState({
@@ -20,58 +21,16 @@ function Login() {
     setError('')
 
     try {
-      // Step 1: Check if the Organization exists using the Supabase REST API
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+      // Let the API handle organization lookup and login
+      const result = await login(formData.email, formData.password, formData.organization)
 
-      const orgResponse = await fetch(
-        `${supabaseUrl}/rest/v1/organizations?select=*&slug=eq.${formData.organization}`,
-        {
-          method: 'GET',
-          headers: {
-            'apikey': supabaseAnonKey,
-            'Authorization': `Bearer ${supabaseAnonKey}`,
-            'Accept': 'application/json', // <--- This header is CRITICAL
-          },
-        }
-      )
-
-      if (!orgResponse.ok) {
-        console.error('Org fetch error:', orgResponse.status, orgResponse.statusText)
-        setError('Organization not found. Please check your slug.')
+      if (result.success) {
+        navigate('/dashboard')
+      } else {
+        setError(result.error || 'Login failed. Please try again.')
         setLoading(false)
-        return
       }
-
-      const orgData = await orgResponse.json()
-
-      if (orgData.length === 0) {
-        setError('Organization not found. Please check your slug.')
-        setLoading(false)
-        return
-      }
-
-      // Step 2: Sign in with Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password,
-      })
-
-      if (authError) {
-        setError(authError.message)
-        setLoading(false)
-        return
-      }
-
-      // Step 3: Store the Organization info in local storage
-      localStorage.setItem('org_slug', orgData[0].slug)
-      localStorage.setItem('org_id', orgData[0].id)
-
-      // Step 4: Navigate to Dashboard
-      navigate('/dashboard')
-      
     } catch (err) {
-      console.error('Total error:', err)
       setError('An error occurred. Please try again.')
       setLoading(false)
     }
