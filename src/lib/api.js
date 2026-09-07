@@ -1,8 +1,5 @@
-// src/lib/api.js
-
 const API_BASE_URL = 'https://fezher-api.fietprojects.workers.dev';
 
-// Generic fetch wrapper
 const request = async (endpoint, options = {}) => {
   try {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -16,11 +13,9 @@ const request = async (endpoint, options = {}) => {
     });
 
     const data = await response.json();
-
     if (!response.ok) {
       throw new Error(data.error || 'API request failed');
     }
-
     return data;
   } catch (error) {
     console.error('API Error:', error);
@@ -28,16 +23,15 @@ const request = async (endpoint, options = {}) => {
   }
 };
 
-// --- Auth Endpoints ---
 export const loginUser = async (email, password, organizationSlug) => {
-  return request('/api/auth/login', {
+  return request('/auth/login', {  // <-- Changed to /auth/login (no /api)
     method: 'POST',
     body: { email, password, organizationSlug },
   });
 };
 
 export const signupUser = async (email, password, organizationSlug) => {
-  return request('/api/auth/signup', {
+  return request('/auth/signup', {  // <-- Changed to /auth/signup (no /api)
     method: 'POST',
     body: { email, password, organizationSlug },
   });
