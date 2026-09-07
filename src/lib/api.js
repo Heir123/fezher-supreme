@@ -1,7 +1,7 @@
 // src/lib/api.js
 
 // Single source of truth for the backend API
-const API_BASE_URL = 'https://fezher-api.fietprojects.workers.dev';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://fezher-api.fietprojects.workers.dev';
 
 // Generic fetch wrapper to handle JSON responses and errors
 const request = async (endpoint, options = {}) => {
@@ -10,7 +10,6 @@ const request = async (endpoint, options = {}) => {
       method: options.method || 'GET',
       headers: {
         'Content-Type': 'application/json',
-        // If you have a token, send it here for protected routes
         ...(localStorage.getItem('authToken') && { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }),
         ...options.headers,
       },
@@ -32,14 +31,14 @@ const request = async (endpoint, options = {}) => {
 
 // --- Auth Endpoints ---
 export const loginUser = async (email, password, organizationSlug) => {
-  return request('/api/auth/login', {
+  return request('/api/auth/login', {  // <--- ADD THE /api HERE
     method: 'POST',
     body: { email, password, organizationSlug },
   });
 };
 
 export const signupUser = async (email, password, organizationSlug) => {
-  return request('/api/auth/signup', {
+  return request('/api/auth/signup', {  // <--- ADD THE /api HERE
     method: 'POST',
     body: { email, password, organizationSlug },
   });
@@ -47,12 +46,12 @@ export const signupUser = async (email, password, organizationSlug) => {
 
 // --- Organization Endpoints ---
 export const checkOrganization = async (organizationSlug) => {
-  return request(`/api/organizations/slug/${organizationSlug}`);
+  return request(`/api/organizations/slug/${organizationSlug}`); // <--- ADD THE /api HERE
 };
 
 // --- Data Endpoints (Add as you build more features) ---
 export const fetchDashboardData = async () => {
-  return request('/api/dashboard');
+  return request('/api/dashboard'); // <--- ADD THE /api HERE
 };
 
 export default request;
