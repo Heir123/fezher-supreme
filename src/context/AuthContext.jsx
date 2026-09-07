@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { loginUser, checkOrganization } from '../lib/api'
 
 const AuthContext = createContext()
 
@@ -39,20 +40,10 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password, organizationId) => {
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
-      
-      const response = await fetch(`${API_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, organizationId })
-      })
+      // 1. Call the API to login and get user data
+      const data = await loginUser(email, password, organizationId)
 
-      const data = await response.json()
-      
-      if (!response.ok) {
-        return { success: false, error: data.error || 'Login failed' }
-      }
-
+      // 2. Store session in local storage
       localStorage.setItem('authToken', data.token)
       localStorage.setItem('userData', JSON.stringify(data.user))
       localStorage.setItem('organizationData', JSON.stringify(data.organization))
